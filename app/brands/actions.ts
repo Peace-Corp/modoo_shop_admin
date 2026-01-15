@@ -1,0 +1,76 @@
+'use server';
+
+import { createServerClient } from '@/lib/supabase';
+import { Brand } from '@/types';
+import { revalidatePath } from 'next/cache';
+
+export async function createBrand(formData: FormData): Promise<{ success: boolean; data?: Brand; error?: string }> {
+  const supabase = createServerClient();
+
+  const brandData = {
+    id: formData.get('id') as string,
+    name: formData.get('name') as string,
+    slug: formData.get('slug') as string,
+    description: formData.get('description') as string,
+    logo: formData.get('logo') as string,
+    banner: formData.get('banner') as string,
+    featured: formData.get('featured') === 'on',
+  };
+
+  const { data, error } = await supabase
+    .from('brands')
+    .insert(brandData)
+    .select()
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/brands');
+  return { success: true, data: data as Brand };
+}
+
+export async function updateBrand(id: string, formData: FormData): Promise<{ success: boolean; data?: Brand; error?: string }> {
+  const supabase = createServerClient();
+
+  const brandData = {
+    name: formData.get('name') as string,
+    slug: formData.get('slug') as string,
+    description: formData.get('description') as string,
+    logo: formData.get('logo') as string,
+    banner: formData.get('banner') as string,
+    featured: formData.get('featured') === 'on',
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('brands')
+    .update(brandData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/brands');
+  return { success: true, data: data as Brand };
+}
+
+export async function deleteBrand(id: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = createServerClient();
+
+  const { error } = await supabase
+    .from('brands')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/brands');
+  return { success: true };
+}

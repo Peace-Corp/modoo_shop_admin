@@ -1,65 +1,126 @@
-import Image from "next/image";
+import { supabase } from '@/lib/supabase';
+import { DashboardStats } from '@/types';
 
-export default function Home() {
+async function getDashboardStats(): Promise<DashboardStats> {
+  const [productsRes, brandsRes, ordersRes, salesRes] = await Promise.all([
+    supabase.from('products').select('*', { count: 'exact' }),
+    supabase.from('brands').select('*', { count: 'exact' }),
+    supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
+    supabase.from('sales_data').select('*').order('date', { ascending: false }).limit(7),
+  ]);
+
+  const totalRevenue = salesRes.data?.reduce((sum, d) => sum + Number(d.revenue), 0) || 0;
+
+  return {
+    totalRevenue,
+    totalOrders: ordersRes.data?.length || 0,
+    totalProducts: productsRes.count || 0,
+    totalBrands: brandsRes.count || 0,
+    recentOrders: (ordersRes.data || []) as DashboardStats['recentOrders'],
+    salesData: (salesRes.data || []) as DashboardStats['salesData'],
+  };
+}
+
+export default async function DashboardPage() {
+  const stats = await getDashboardStats();
+
+  const statCards = [
+    {
+      name: 'Total Revenue',
+      value: `$${stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+    },
+    {
+      name: 'Total Orders',
+      value: stats.totalOrders.toString(),
+      icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
+    },
+    {
+      name: 'Total Products',
+      value: stats.totalProducts.toString(),
+      icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+    },
+    {
+      name: 'Total Brands',
+      value: stats.totalBrands.toString(),
+      icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-8">Dashboard Overview</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {statCards.map(stat => (
+          <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
+                </svg>
+              </div>
+            </div>
+            <p className="mt-4 text-2xl font-bold text-gray-900">{stat.value}</p>
+            <p className="text-sm text-gray-500">{stat.name}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Sales Overview (Last 7 Days)</h2>
+          <div className="h-64 flex items-end justify-between gap-2">
+            {stats.salesData.map((day, index) => {
+              const maxRevenue = Math.max(...stats.salesData.map(d => Number(d.revenue)));
+              const height = maxRevenue > 0 ? (Number(day.revenue) / maxRevenue) * 100 : 0;
+              return (
+                <div key={index} className="flex-1 flex flex-col items-center">
+                  <div
+                    className="w-full bg-blue-500 rounded-t-lg transition-all hover:bg-blue-600"
+                    style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Orders</h2>
+          <div className="space-y-4">
+            {stats.recentOrders.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No orders yet</p>
+            ) : (
+              stats.recentOrders.map(order => (
+                <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm truncate max-w-[120px]">{order.id}</p>
+                    <p className="text-sm text-gray-500">
+                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : '-'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900">${order.total.toFixed(2)}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                      order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                      order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                      order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
