@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { Product, Brand } from '@/types';
-import { createProduct, updateProduct, deleteProduct } from './actions';
+import { Product, Brand, ProductVariant } from '@/types';
+import { createProduct, updateProduct, deleteProduct, getProductVariants, createVariant, updateVariant, deleteVariant } from './actions';
 
 interface BrandProductsClientProps {
   brand: Brand;
@@ -21,21 +21,112 @@ export default function BrandProductsClient({ brand, initialProducts }: BrandPro
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isPending, startTransition] = useTransition();
   const [productImages, setProductImages] = useState<string[]>([]);
+  const [sizeChartImage, setSizeChartImage] = useState<string>('');
+  const [descriptionImage, setDescriptionImage] = useState<string>('');
+
+  // Tab state for modal
+  const [activeTab, setActiveTab] = useState<'info' | 'variants'>('info');
+
+  // Variant state
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [isAddingVariant, setIsAddingVariant] = useState(false);
+  const [newVariantSize, setNewVariantSize] = useState('');
+  const [newVariantStock, setNewVariantStock] = useState(0);
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const [editingStock, setEditingStock] = useState(0);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const openEditModal = (product: Product) => {
+  const openEditModal = async (product: Product) => {
     setEditingProduct(product);
     setProductImages(product.images || []);
+    setSizeChartImage(product.size_chart_image || '');
+    setDescriptionImage(product.description_image || '');
+    setActiveTab('info');
     setIsModalOpen(true);
+
+    // Fetch variants for this product
+    const result = await getProductVariants(product.id);
+    if (result.success && result.data) {
+      setVariants(result.data);
+    } else {
+      setVariants([]);
+    }
   };
 
   const openAddModal = () => {
     setEditingProduct(null);
     setProductImages([]);
+    setSizeChartImage('');
+    setDescriptionImage('');
+    setVariants([]);
+    setActiveTab('info');
     setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+    setVariants([]);
+    setIsAddingVariant(false);
+    setNewVariantSize('');
+    setNewVariantStock(0);
+    setEditingVariantId(null);
+  };
+
+  // Variant handlers
+  const handleAddVariant = async () => {
+    if (!editingProduct || !newVariantSize.trim()) return;
+
+    startTransition(async () => {
+      const result = await createVariant(brand.id, editingProduct.id, newVariantSize.trim(), newVariantStock, variants.length);
+      if (result.success && result.data) {
+        const updatedVariants = [...variants, result.data];
+        setVariants(updatedVariants);
+        setNewVariantSize('');
+        setNewVariantStock(0);
+        setIsAddingVariant(false);
+        // Update product stock display
+        const totalStock = updatedVariants.reduce((sum, v) => sum + v.stock, 0);
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, stock: totalStock } : p));
+        setEditingProduct({ ...editingProduct, stock: totalStock });
+      }
+    });
+  };
+
+  const handleUpdateVariantStock = async (variantId: string) => {
+    if (!editingProduct) return;
+
+    startTransition(async () => {
+      const result = await updateVariant(brand.id, editingProduct.id, variantId, { stock: editingStock });
+      if (result.success && result.data) {
+        const updatedVariants = variants.map(v => v.id === variantId ? result.data! : v);
+        setVariants(updatedVariants);
+        setEditingVariantId(null);
+        // Update product stock display
+        const totalStock = updatedVariants.reduce((sum, v) => sum + v.stock, 0);
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, stock: totalStock } : p));
+        setEditingProduct({ ...editingProduct, stock: totalStock });
+      }
+    });
+  };
+
+  const handleDeleteVariant = async (variantId: string) => {
+    if (!editingProduct || !confirm('이 사이즈 옵션을 삭제하시겠습니까?')) return;
+
+    startTransition(async () => {
+      const result = await deleteVariant(brand.id, editingProduct.id, variantId);
+      if (result.success) {
+        const updatedVariants = variants.filter(v => v.id !== variantId);
+        setVariants(updatedVariants);
+        // Update product stock display
+        const totalStock = updatedVariants.reduce((sum, v) => sum + v.stock, 0);
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, stock: totalStock } : p));
+        setEditingProduct({ ...editingProduct, stock: totalStock });
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -48,19 +139,26 @@ export default function BrandProductsClient({ brand, initialProducts }: BrandPro
       formData.append('images', url);
     });
 
+    // Add size chart and description images
+    formData.set('size_chart_image', sizeChartImage);
+    formData.set('description_image', descriptionImage);
+
     startTransition(async () => {
       if (editingProduct) {
         const result = await updateProduct(brand.id, editingProduct.id, formData);
         if (result.success && result.data) {
           setProducts(prev => prev.map(p => p.id === editingProduct.id ? result.data! : p));
+          setEditingProduct(result.data);
         }
       } else {
         const result = await createProduct(brand.id, formData);
         if (result.success && result.data) {
           setProducts(prev => [result.data!, ...prev]);
+          // Switch to edit mode for the new product to allow adding variants
+          setEditingProduct(result.data);
+          setActiveTab('variants');
         }
       }
-      setIsModalOpen(false);
     });
   };
 
@@ -159,8 +257,8 @@ export default function BrandProductsClient({ brand, initialProducts }: BrandPro
                 filteredProducts.map(product => (
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <Link href={`/brands/${brand.id}/products/${product.id}`} className="flex items-center group">
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-gray-100 mr-3 md:mr-4 flex-shrink-0">
+                      <button onClick={() => openEditModal(product)} className="flex items-center group text-left w-full">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-gray-100 mr-3 md:mr-4 shrink-0">
                           {product.images[0] && (
                             <Image
                               src={product.images[0]}
@@ -175,7 +273,7 @@ export default function BrandProductsClient({ brand, initialProducts }: BrandPro
                           <p className="font-medium text-gray-900 group-hover:text-blue-600 truncate">{product.name}</p>
                           <p className="text-xs text-gray-500 truncate sm:hidden">{product.category}</p>
                         </div>
-                      </Link>
+                      </button>
                     </td>
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap text-gray-600 hidden sm:table-cell">
                       {product.category}
@@ -234,86 +332,297 @@ export default function BrandProductsClient({ brand, initialProducts }: BrandPro
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {editingProduct ? '상품 수정' : '새 상품 추가'}
-              </h2>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-100 shrink-0">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {editingProduct ? '상품 수정' : '새 상품 추가'}
+                </h2>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Tabs - only show when editing */}
+              {editingProduct && (
+                <div className="flex gap-4 mt-4 border-b border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('info')}
+                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === 'info'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    상품 정보
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('variants')}
+                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === 'variants'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    사이즈 옵션 ({variants.length})
+                  </button>
+                </div>
+              )}
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <Input
-                name="name"
-                label="상품명"
-                defaultValue={editingProduct?.name}
-                required
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  name="category"
-                  label="카테고리"
-                  defaultValue={editingProduct?.category}
-                  required
-                />
-                <Input
-                  name="stock"
-                  label="재고"
-                  type="number"
-                  defaultValue={editingProduct?.stock}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  name="price"
-                  label="가격"
-                  type="number"
-                  defaultValue={editingProduct?.price}
-                  required
-                />
-                <Input
-                  name="original_price"
-                  label="정가 (선택사항)"
-                  type="number"
-                  defaultValue={editingProduct?.original_price || ''}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
-                <textarea
-                  name="description"
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  defaultValue={editingProduct?.description}
-                  required
-                />
-              </div>
-              <ImageUpload
-                value={productImages}
-                onChange={(urls) => setProductImages(urls as string[])}
-                multiple
-                label="상품 이미지"
-                aspectRatio="square"
-                maxFiles={5}
-                helperText="최대 5개 이미지 업로드. 드래그하여 순서 변경."
-              />
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="featured"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  defaultChecked={editingProduct?.featured || false}
-                />
-                <span className="ml-2 text-sm text-gray-700">추천 상품</span>
-              </label>
-              <div className="flex justify-end gap-4 pt-4 border-t border-gray-100">
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                  취소
-                </Button>
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? '저장 중...' : editingProduct ? '변경사항 저장' : '상품 추가'}
-                </Button>
-              </div>
-            </form>
+
+            <div className="overflow-y-auto flex-1">
+              {/* Product Info Tab */}
+              {(activeTab === 'info' || !editingProduct) && (
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                  <Input
+                    name="name"
+                    label="상품명"
+                    defaultValue={editingProduct?.name}
+                    required
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      name="category"
+                      label="카테고리"
+                      defaultValue={editingProduct?.category}
+                      required
+                    />
+                    <Input
+                      name="stock"
+                      label="기본 재고"
+                      type="number"
+                      defaultValue={editingProduct?.stock}
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      name="price"
+                      label="가격"
+                      type="number"
+                      defaultValue={editingProduct?.price}
+                      required
+                    />
+                    <Input
+                      name="original_price"
+                      label="정가 (선택사항)"
+                      type="number"
+                      defaultValue={editingProduct?.original_price || ''}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
+                    <textarea
+                      name="description"
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      defaultValue={editingProduct?.description}
+                      required
+                    />
+                  </div>
+                  <ImageUpload
+                    value={productImages}
+                    onChange={(urls) => setProductImages(urls as string[])}
+                    multiple
+                    label="상품 이미지"
+                    aspectRatio="square"
+                    maxFiles={5}
+                    helperText="최대 5개 이미지 업로드. 드래그하여 순서 변경."
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ImageUpload
+                      value={sizeChartImage}
+                      onChange={(url) => setSizeChartImage(url as string)}
+                      label="사이즈 차트 이미지"
+                      aspectRatio="square"
+                      helperText="사이즈 측정 가이드 이미지"
+                    />
+                    <ImageUpload
+                      value={descriptionImage}
+                      onChange={(url) => setDescriptionImage(url as string)}
+                      label="상품 상세 이미지"
+                      aspectRatio="square"
+                      helperText="상품 상세 설명 이미지"
+                    />
+                  </div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="featured"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      defaultChecked={editingProduct?.featured || false}
+                    />
+                    <span className="ml-2 text-sm text-gray-700">추천 상품</span>
+                  </label>
+                  <div className="flex justify-end gap-4 pt-4 border-t border-gray-100">
+                    <Button type="button" variant="outline" onClick={closeModal}>
+                      {editingProduct ? '닫기' : '취소'}
+                    </Button>
+                    <Button type="submit" disabled={isPending}>
+                      {isPending ? '저장 중...' : editingProduct ? '변경사항 저장' : '상품 추가'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {/* Size Variants Tab */}
+              {activeTab === 'variants' && editingProduct && (
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm text-gray-500">사이즈별 재고 관리</p>
+                      {variants.length > 0 && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          총 재고: {variants.reduce((sum, v) => sum + v.stock, 0)}개
+                        </p>
+                      )}
+                    </div>
+                    {!isAddingVariant && (
+                      <Button onClick={() => setIsAddingVariant(true)} size="sm">
+                        사이즈 추가
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Add Variant Form */}
+                  {isAddingVariant && (
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">사이즈</label>
+                          <input
+                            type="text"
+                            value={newVariantSize}
+                            onChange={(e) => setNewVariantSize(e.target.value)}
+                            placeholder="예: S, M, L, XL, 95, 100..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="w-full sm:w-32">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">재고</label>
+                          <input
+                            type="number"
+                            value={newVariantStock}
+                            onChange={(e) => setNewVariantStock(parseInt(e.target.value) || 0)}
+                            min={0}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="flex gap-2 items-end">
+                          <Button onClick={handleAddVariant} disabled={isPending || !newVariantSize.trim()} size="sm">
+                            {isPending ? '추가 중...' : '추가'}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => {
+                            setIsAddingVariant(false);
+                            setNewVariantSize('');
+                            setNewVariantStock(0);
+                          }}>
+                            취소
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Variants Table */}
+                  {variants.length > 0 ? (
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">사이즈</th>
+                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">재고</th>
+                            <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">관리</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {variants.map((variant) => (
+                            <tr key={variant.id} className="border-t border-gray-100 hover:bg-gray-50">
+                              <td className="py-3 px-4">
+                                <span className="font-medium text-gray-900">{variant.size}</span>
+                              </td>
+                              <td className="py-3 px-4">
+                                {editingVariantId === variant.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      value={editingStock}
+                                      onChange={(e) => setEditingStock(parseInt(e.target.value) || 0)}
+                                      min={0}
+                                      className="w-20 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      autoFocus
+                                    />
+                                    <button
+                                      onClick={() => handleUpdateVariantStock(variant.id)}
+                                      disabled={isPending}
+                                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                    >
+                                      저장
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingVariantId(null)}
+                                      className="text-gray-500 hover:text-gray-700 text-sm"
+                                    >
+                                      취소
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setEditingVariantId(variant.id);
+                                      setEditingStock(variant.stock);
+                                    }}
+                                    className={`font-medium hover:underline ${variant.stock < 10 ? 'text-red-600' : 'text-gray-900'}`}
+                                  >
+                                    {variant.stock}개
+                                  </button>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <button
+                                  onClick={() => handleDeleteVariant(variant.id)}
+                                  disabled={isPending}
+                                  className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                >
+                                  삭제
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-gray-50 border-t border-gray-200">
+                            <td className="py-3 px-4 font-medium text-gray-700">합계</td>
+                            <td className="py-3 px-4 font-bold text-gray-900">
+                              {variants.reduce((sum, v) => sum + v.stock, 0)}개
+                            </td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 border border-gray-200 rounded-lg bg-gray-50">
+                      <p>아직 사이즈 옵션이 없습니다.</p>
+                      <p className="text-sm mt-1">사이즈를 추가하여 사이즈별 재고를 관리하세요.</p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-4 pt-4 mt-4 border-t border-gray-100">
+                    <Button type="button" variant="outline" onClick={closeModal}>
+                      닫기
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -10,6 +10,9 @@ export async function createProduct(brandId: string, formData: FormData): Promis
   // Get all images from formData
   const images = formData.getAll('images') as string[];
 
+  const sizeChartImage = formData.get('size_chart_image') as string;
+  const descriptionImage = formData.get('description_image') as string;
+
   const productData = {
     name: formData.get('name') as string,
     description: formData.get('description') as string,
@@ -20,6 +23,8 @@ export async function createProduct(brandId: string, formData: FormData): Promis
     stock: parseInt(formData.get('stock') as string),
     images: images.filter(img => img),
     featured: formData.get('featured') === 'on',
+    size_chart_image: sizeChartImage || null,
+    description_image: descriptionImage || null,
   };
 
   const { data, error } = await supabase
@@ -42,6 +47,8 @@ export async function updateProduct(brandId: string, id: string, formData: FormD
 
   // Get all images from formData
   const images = formData.getAll('images') as string[];
+  const sizeChartImage = formData.get('size_chart_image') as string;
+  const descriptionImage = formData.get('description_image') as string;
 
   const productData = {
     name: formData.get('name') as string,
@@ -53,6 +60,8 @@ export async function updateProduct(brandId: string, id: string, formData: FormD
     stock: parseInt(formData.get('stock') as string),
     images: images.filter(img => img),
     featured: formData.get('featured') === 'on',
+    size_chart_image: sizeChartImage || null,
+    description_image: descriptionImage || null,
     updated_at: new Date().toISOString(),
   };
 
@@ -68,7 +77,6 @@ export async function updateProduct(brandId: string, id: string, formData: FormD
   }
 
   revalidatePath(`/brands/${brandId}/products`);
-  revalidatePath(`/brands/${brandId}/products/${id}`);
   revalidatePath('/brands');
   return { success: true, data: data as Product };
 }
@@ -141,7 +149,7 @@ export async function createVariant(
     return { success: false, error: error.message };
   }
 
-  revalidatePath(`/brands/${brandId}/products/${productId}`);
+  revalidatePath(`/brands/${brandId}/products`);
   return { success: true, data: data as ProductVariant };
 }
 
@@ -164,7 +172,7 @@ export async function updateVariant(
     return { success: false, error: error.message };
   }
 
-  revalidatePath(`/brands/${brandId}/products/${productId}`);
+  revalidatePath(`/brands/${brandId}/products`);
   return { success: true, data: data as ProductVariant };
 }
 
@@ -184,6 +192,6 @@ export async function deleteVariant(
     return { success: false, error: error.message };
   }
 
-  revalidatePath(`/brands/${brandId}/products/${productId}`);
+  revalidatePath(`/brands/${brandId}/products`);
   return { success: true };
 }

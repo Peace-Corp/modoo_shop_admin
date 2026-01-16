@@ -22,6 +22,8 @@ export interface Product {
   review_count?: number | null;
   tags?: string[] | null;
   featured?: boolean | null;
+  size_chart_image?: string | null;
+  description_image?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   product_variants?: ProductVariant[];
