@@ -1,3 +1,13 @@
+export interface ProductVariant {
+  id: string;
+  product_id: string;
+  size: string;
+  stock: number;
+  sort_order: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -14,6 +24,7 @@ export interface Product {
   featured?: boolean | null;
   created_at?: string | null;
   updated_at?: string | null;
+  product_variants?: ProductVariant[];
 }
 
 export interface Brand {
@@ -49,6 +60,8 @@ export interface OrderItem {
   id: string;
   order_id: string;
   product_id: string;
+  variant_id?: string | null;
+  size?: string | null;
   quantity: number;
   price_at_time: number;
   created_at?: string | null;

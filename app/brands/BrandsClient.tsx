@@ -2,8 +2,10 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Brand, Product } from '@/types';
 import { createBrand, updateBrand, deleteBrand } from './actions';
 
@@ -18,6 +20,8 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [logoUrl, setLogoUrl] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
 
   const filteredBrands = brands.filter(brand =>
     brand.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -29,17 +33,25 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
 
   const openEditModal = (brand: Brand) => {
     setEditingBrand(brand);
+    setLogoUrl(brand.logo || '');
+    setBannerUrl(brand.banner || '');
     setIsModalOpen(true);
   };
 
   const openAddModal = () => {
     setEditingBrand(null);
+    setLogoUrl('');
+    setBannerUrl('');
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+
+    // Add image URLs from state
+    formData.set('logo', logoUrl);
+    formData.set('banner', bannerUrl);
 
     startTransition(async () => {
       if (editingBrand) {
@@ -131,25 +143,29 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
             </div>
             <div className="p-4">
               <p className="text-sm text-gray-600 line-clamp-2 mb-4">{brand.description}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">
-                  {getProductCount(brand.id)} products
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openEditModal(brand)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(brand.id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
-                    disabled={isPending}
-                  >
-                    Delete
-                  </button>
-                </div>
+              <Link
+                href={`/brands/${brand.id}/products`}
+                className="flex items-center justify-between w-full px-3 py-2 mb-3 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <span>{getProductCount(brand.id)} products</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={() => openEditModal(brand)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(brand.id)}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium"
+                  disabled={isPending}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>
@@ -196,17 +212,19 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
                   required
                 />
               </div>
-              <Input
-                name="logo"
-                label="Logo URL"
-                defaultValue={editingBrand?.logo}
-                required
+              <ImageUpload
+                value={logoUrl}
+                onChange={(url) => setLogoUrl(url as string)}
+                label="Logo"
+                aspectRatio="square"
+                helperText="Square image recommended (e.g., 200x200)"
               />
-              <Input
-                name="banner"
-                label="Banner URL"
-                defaultValue={editingBrand?.banner}
-                required
+              <ImageUpload
+                value={bannerUrl}
+                onChange={(url) => setBannerUrl(url as string)}
+                label="Banner"
+                aspectRatio="banner"
+                helperText="Wide banner image (e.g., 1200x400)"
               />
               <label className="flex items-center">
                 <input

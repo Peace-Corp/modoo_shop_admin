@@ -2,39 +2,39 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Product, Brand } from '@/types';
 import { createProduct, updateProduct, deleteProduct } from './actions';
 
-interface ProductsClientProps {
+interface BrandProductsClientProps {
+  brand: Brand;
   initialProducts: Product[];
-  brands: Brand[];
 }
 
-export default function ProductsClient({ initialProducts, brands }: ProductsClientProps) {
+export default function BrandProductsClient({ brand, initialProducts }: BrandProductsClientProps) {
   const [products, setProducts] = useState(initialProducts);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [productImages, setProductImages] = useState<string[]>([]);
 
-  const brandMap = new Map(brands.map(b => [b.id, b]));
-
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesBrand = !selectedBrand || product.brand_id === selectedBrand;
-    return matchesSearch && matchesBrand;
-  });
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
+    setProductImages(product.images || []);
     setIsModalOpen(true);
   };
 
   const openAddModal = () => {
     setEditingProduct(null);
+    setProductImages([]);
     setIsModalOpen(true);
   };
 
@@ -42,14 +42,20 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
+    // Add images from state
+    formData.delete('images');
+    productImages.forEach((url) => {
+      formData.append('images', url);
+    });
+
     startTransition(async () => {
       if (editingProduct) {
-        const result = await updateProduct(editingProduct.id, formData);
+        const result = await updateProduct(brand.id, editingProduct.id, formData);
         if (result.success && result.data) {
           setProducts(prev => prev.map(p => p.id === editingProduct.id ? result.data! : p));
         }
       } else {
-        const result = await createProduct(formData);
+        const result = await createProduct(brand.id, formData);
         if (result.success && result.data) {
           setProducts(prev => [result.data!, ...prev]);
         }
@@ -62,7 +68,7 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     startTransition(async () => {
-      const result = await deleteProduct(id);
+      const result = await deleteProduct(brand.id, id);
       if (result.success) {
         setProducts(prev => prev.filter(p => p.id !== id));
       }
@@ -71,8 +77,55 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Products</h1>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+        <Link href="/brands" className="hover:text-blue-600">Brands</Link>
+        <span>/</span>
+        <span className="text-gray-900 font-medium">{brand.name}</span>
+        <span>/</span>
+        <span className="text-gray-900 font-medium">Products</span>
+      </nav>
+
+      {/* Brand Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div className="relative h-24 md:h-32">
+          {brand.banner && (
+            <Image
+              src={brand.banner}
+              alt={brand.name}
+              fill
+              className="object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute bottom-3 left-4 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white">
+              {brand.logo && (
+                <Image
+                  src={brand.logo}
+                  alt={brand.name}
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">{brand.name} Products</h1>
+              <p className="text-sm text-gray-200">{products.length} products</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex-1 w-full sm:w-auto">
+          <Input
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
         <Button onClick={openAddModal}>
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -81,50 +134,33 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <Input
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <select
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={selectedBrand}
-            onChange={(e) => setSelectedBrand(e.target.value)}
-          >
-            <option value="">All Brands</option>
-            {brands.map(brand => (
-              <option key={brand.id} value={brand.id}>{brand.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
+      {/* Products Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 md:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                <th className="px-4 md:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Category</th>
+                <th className="px-4 md:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                <th className="px-4 md:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Stock</th>
+                <th className="px-4 md:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Status</th>
+                <th className="px-4 md:px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredProducts.map(product => {
-                const brand = brandMap.get(product.brand_id);
-                return (
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    No products found. Add your first product!
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map(product => (
                   <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 mr-4">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                      <Link href={`/brands/${brand.id}/products/${product.id}`} className="flex items-center group">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-gray-100 mr-3 md:mr-4 flex-shrink-0">
                           {product.images[0] && (
                             <Image
                               src={product.images[0]}
@@ -135,44 +171,41 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
                             />
                           )}
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{product.name}</p>
-                          <p className="text-sm text-gray-500">ID: {product.id.slice(0, 8)}...</p>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 group-hover:text-blue-600 truncate">{product.name}</p>
+                          <p className="text-xs text-gray-500 truncate sm:hidden">{product.category}</p>
                         </div>
-                      </div>
+                      </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                      {brand?.name || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-gray-600 hidden sm:table-cell">
                       {product.category}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                       <div>
                         <p className="font-medium text-gray-900">${product.price.toLocaleString()}</p>
                         {product.original_price && (
-                          <p className="text-sm text-gray-400 line-through">
+                          <p className="text-xs text-gray-400 line-through">
                             ${product.original_price.toLocaleString()}
                           </p>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <span className={`font-medium ${product.stock < 20 ? 'text-red-600' : 'text-gray-900'}`}>
                         {product.stock}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
                         {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => openEditModal(product)}
-                        className="text-blue-600 hover:text-blue-800 font-medium mr-4"
+                        className="text-blue-600 hover:text-blue-800 font-medium mr-3 md:mr-4"
                       >
                         Edit
                       </button>
@@ -185,22 +218,23 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
                       </button>
                     </td>
                   </tr>
-                );
-              })}
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-100">
+        <div className="px-4 md:px-6 py-4 border-t border-gray-100">
           <p className="text-sm text-gray-500">
             Showing {filteredProducts.length} of {products.length} products
           </p>
         </div>
       </div>
 
+      {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <h2 className="text-xl font-semibold text-gray-900">
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
@@ -213,29 +247,22 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
                 defaultValue={editingProduct?.name}
                 required
               />
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-                  <select
-                    name="brand_id"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    defaultValue={editingProduct?.brand_id}
-                    required
-                  >
-                    <option value="">Select Brand</option>
-                    {brands.map(brand => (
-                      <option key={brand.id} value={brand.id}>{brand.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   name="category"
                   label="Category"
                   defaultValue={editingProduct?.category}
                   required
                 />
+                <Input
+                  name="stock"
+                  label="Stock"
+                  type="number"
+                  defaultValue={editingProduct?.stock}
+                  required
+                />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   name="price"
                   label="Price"
@@ -250,13 +277,6 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
                   defaultValue={editingProduct?.original_price || ''}
                 />
               </div>
-              <Input
-                name="stock"
-                label="Stock"
-                type="number"
-                defaultValue={editingProduct?.stock}
-                required
-              />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
@@ -267,11 +287,14 @@ export default function ProductsClient({ initialProducts, brands }: ProductsClie
                   required
                 />
               </div>
-              <Input
-                name="images"
-                label="Image URL"
-                defaultValue={editingProduct?.images[0]}
-                required
+              <ImageUpload
+                value={productImages}
+                onChange={(urls) => setProductImages(urls as string[])}
+                multiple
+                label="Product Images"
+                aspectRatio="square"
+                maxFiles={5}
+                helperText="Upload up to 5 images. Drag to reorder."
               />
               <label className="flex items-center">
                 <input
