@@ -64,6 +64,7 @@ export type Database = {
           banner: string
           created_at: string | null
           description: string
+          eng_name: string | null
           featured: boolean | null
           id: string
           logo: string
@@ -75,6 +76,7 @@ export type Database = {
           banner: string
           created_at?: string | null
           description: string
+          eng_name?: string | null
           featured?: boolean | null
           id: string
           logo: string
@@ -86,11 +88,51 @@ export type Database = {
           banner?: string
           created_at?: string | null
           description?: string
+          eng_name?: string | null
           featured?: boolean | null
           id?: string
           logo?: string
           name?: string
           slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hero_banners: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_link: string
+          is_active: boolean | null
+          link: string | null
+          subtitle: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_link: string
+          is_active?: boolean | null
+          link?: string | null
+          subtitle?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_link?: string
+          is_active?: boolean | null
+          link?: string | null
+          subtitle?: string | null
+          tags?: string[] | null
+          title?: string
           updated_at?: string | null
         }
         Relationships: []
