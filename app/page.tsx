@@ -26,22 +26,22 @@ export default async function DashboardPage() {
 
   const statCards = [
     {
-      name: 'Total Revenue',
-      value: `$${stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      name: '총 매출',
+      value: `₩${stats.totalRevenue.toLocaleString('ko-KR')}`,
       icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
     },
     {
-      name: 'Total Orders',
+      name: '총 주문',
       value: stats.totalOrders.toString(),
       icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
     },
     {
-      name: 'Total Products',
+      name: '총 상품',
       value: stats.totalProducts.toString(),
       icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
     },
     {
-      name: 'Total Brands',
+      name: '총 브랜드',
       value: stats.totalBrands.toString(),
       icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
     },
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Dashboard Overview</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-8">대시보드 개요</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map(stat => (
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Sales Overview (Last 7 Days)</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">매출 현황 (최근 7일)</h2>
           <div className="h-64 flex items-end justify-between gap-2">
             {stats.salesData.map((day, index) => {
               const maxRevenue = Math.max(...stats.salesData.map(d => Number(d.revenue)));
@@ -90,10 +90,10 @@ export default async function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Orders</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">최근 주문</h2>
           <div className="space-y-4">
             {stats.recentOrders.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No orders yet</p>
+              <p className="text-gray-500 text-center py-8">주문이 없습니다</p>
             ) : (
               stats.recentOrders.map(order => (
                 <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium text-gray-900">${order.total.toFixed(2)}</p>
+                    <p className="font-medium text-gray-900">₩{order.total.toLocaleString('ko-KR')}</p>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       order.status === 'delivered' ? 'bg-green-100 text-green-700' :
                       order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :

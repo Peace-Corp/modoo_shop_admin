@@ -2,6 +2,34 @@
 
 import { createServerClient } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { Order, OrderItem } from '@/types';
+
+interface OrderWithItems extends Order {
+  order_items?: (OrderItem & { products?: { name: string; images: string[] } })[];
+  profiles?: { name: string; email: string };
+}
+
+export async function fetchOrders(): Promise<{ orders: OrderWithItems[]; error?: string }> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      order_items (
+        *,
+        products (name, images)
+      ),
+      profiles (name, email)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return { orders: [], error: error.message };
+  }
+
+  return { orders: (data || []) as OrderWithItems[] };
+}
 
 export async function updateOrderStatus(id: string, status: string): Promise<{ success: boolean; error?: string }> {
   const supabase = createServerClient();

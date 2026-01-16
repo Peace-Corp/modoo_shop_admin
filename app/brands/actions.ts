@@ -10,6 +10,7 @@ export async function createBrand(formData: FormData): Promise<{ success: boolea
   const brandData = {
     id: formData.get('id') as string,
     name: formData.get('name') as string,
+    eng_name: formData.get('eng_name') as string || null,
     slug: formData.get('slug') as string,
     description: formData.get('description') as string,
     logo: formData.get('logo') as string,
@@ -36,6 +37,7 @@ export async function updateBrand(id: string, formData: FormData): Promise<{ suc
 
   const brandData = {
     name: formData.get('name') as string,
+    eng_name: formData.get('eng_name') as string || null,
     slug: formData.get('slug') as string,
     description: formData.get('description') as string,
     logo: formData.get('logo') as string,

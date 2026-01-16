@@ -30,6 +30,7 @@ export interface Product {
 export interface Brand {
   id: string;
   name: string;
+  eng_name?: string | null;
   slug: string;
   logo: string;
   banner: string;
