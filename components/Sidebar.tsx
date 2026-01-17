@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { LogOut } from 'lucide-react';
 
 const navItems = [
   {
@@ -28,13 +30,14 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-40">
+    <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-40 flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-bold text-blue-600">모두 관리자</h2>
       </div>
-      <nav className="px-3 py-4 space-y-1">
+      <nav className="px-3 py-4 space-y-1 flex-1">
         {navItems.map(item => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
@@ -55,6 +58,20 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <div className="p-4 border-t border-gray-200">
+        {user && (
+          <div className="mb-3 px-4">
+            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          </div>
+        )}
+        <button
+          onClick={signOut}
+          className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 rounded-lg transition-colors hover:bg-red-50 hover:text-red-600"
+        >
+          <LogOut className="w-5 h-5 mr-3" />
+          로그아웃
+        </button>
+      </div>
     </aside>
   );
 }
