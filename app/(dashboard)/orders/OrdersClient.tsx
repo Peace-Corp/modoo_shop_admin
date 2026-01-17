@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useMemo, useCallback } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import {
   Accordion,
   AccordionContent,

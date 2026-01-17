@@ -88,11 +88,19 @@ export interface SalesData {
   created_at?: string | null;
 }
 
+export interface DailyOrderStats {
+  date: string;
+  orderCount: number;
+  totalAmount: number;
+}
+
 export interface DashboardStats {
   totalRevenue: number;
   totalOrders: number;
+  totalOrderAmount: number;
   totalProducts: number;
   totalBrands: number;
   recentOrders: Order[];
   salesData: SalesData[];
+  dailyOrderStats: DailyOrderStats[];
 }

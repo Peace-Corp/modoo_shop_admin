@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
@@ -27,6 +28,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // Admin client bypasses RLS for role checks
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -45,7 +52,7 @@ export async function updateSession(request: NextRequest) {
 
   // If user exists, check if they are an admin
   if (user && !isAuthPage) {
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -64,7 +71,7 @@ export async function updateSession(request: NextRequest) {
   // If user exists and on auth pages, redirect to home (only if admin check passed above)
   if (user && isAuthPage) {
     // Check admin status before redirecting to dashboard
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)

@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Product, Brand, ProductVariant } from '@/types';
