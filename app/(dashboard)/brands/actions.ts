@@ -7,6 +7,9 @@ import { revalidatePath } from 'next/cache';
 export async function createBrand(formData: FormData): Promise<{ success: boolean; data?: Brand; error?: string }> {
   const supabase = createServerClient();
 
+  const validPeriodStart = formData.get('valid_period_start') as string;
+  const validPeriodEnd = formData.get('valid_period_end') as string;
+
   const brandData = {
     id: formData.get('id') as string,
     name: formData.get('name') as string,
@@ -16,6 +19,8 @@ export async function createBrand(formData: FormData): Promise<{ success: boolea
     logo: formData.get('logo') as string,
     banner: formData.get('banner') as string,
     featured: formData.get('featured') === 'on',
+    valid_period_start: validPeriodStart || null,
+    valid_period_end: validPeriodEnd || null,
   };
 
   const { data, error } = await supabase
@@ -35,6 +40,9 @@ export async function createBrand(formData: FormData): Promise<{ success: boolea
 export async function updateBrand(id: string, formData: FormData): Promise<{ success: boolean; data?: Brand; error?: string }> {
   const supabase = createServerClient();
 
+  const validPeriodStart = formData.get('valid_period_start') as string;
+  const validPeriodEnd = formData.get('valid_period_end') as string;
+
   const brandData = {
     name: formData.get('name') as string,
     eng_name: formData.get('eng_name') as string || null,
@@ -43,6 +51,8 @@ export async function updateBrand(id: string, formData: FormData): Promise<{ suc
     logo: formData.get('logo') as string,
     banner: formData.get('banner') as string,
     featured: formData.get('featured') === 'on',
+    valid_period_start: validPeriodStart || null,
+    valid_period_end: validPeriodEnd || null,
     updated_at: new Date().toISOString(),
   };
 

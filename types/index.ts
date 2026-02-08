@@ -38,6 +38,8 @@ export interface Brand {
   banner: string;
   description: string;
   featured?: boolean | null;
+  valid_period_start?: string | null;
+  valid_period_end?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }
