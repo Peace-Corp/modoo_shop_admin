@@ -64,8 +64,8 @@ export default function DashboardClient({ initialStats }: DashboardClientProps) 
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">대시보드 개요</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+        <h1 className="text-lg font-bold text-gray-900">대시보드 개요</h1>
         <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
@@ -112,106 +112,63 @@ export default function DashboardClient({ initialStats }: DashboardClientProps) 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         {statCards.map(stat => (
-          <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div key={stat.name} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
             <div className="flex items-center justify-between">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
                 </svg>
               </div>
             </div>
-            <p className="mt-4 text-2xl font-bold text-gray-900">{stat.value}</p>
-            <p className="text-sm text-gray-500">{stat.name}</p>
+            <p className="mt-2 text-lg font-bold text-gray-900">{stat.value}</p>
+            <p className="text-xs text-gray-500">{stat.name}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            주문 현황
-            {date?.from ? (
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                ({format(date.from, 'MM.dd', { locale: ko })}
-                {date.to && ` - ${format(date.to, 'MM.dd', { locale: ko })}`})
-              </span>
-            ) : (
-              <span className="text-sm font-normal text-gray-500 ml-2">(최근 7일)</span>
-            )}
-          </h2>
-          {stats.dailyOrderStats.length === 0 ? (
-            <div className="h-64 flex items-center justify-center">
-              <p className="text-gray-500">해당 기간에 주문이 없습니다</p>
-            </div>
-          ) : (
-            <div className="h-64 flex items-end justify-between gap-2">
-              {stats.dailyOrderStats.map((day, index) => {
-                const maxOrders = Math.max(...stats.dailyOrderStats.map(d => d.orderCount));
-                const height = maxOrders > 0 ? (day.orderCount / maxOrders) * 100 : 0;
-                return (
-                  <div key={index} className="flex-1 flex flex-col items-center group relative">
-                    <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
-                      <p>{day.orderCount}건</p>
-                      <p>₩{day.totalAmount.toLocaleString('ko-KR')}</p>
-                    </div>
-                    <div
-                      className="w-full bg-blue-500 rounded-t-lg transition-all hover:bg-blue-600 cursor-pointer"
-                      style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }}
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      {new Date(day.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">
+          최근 주문
+          {date?.from && (
+            <span className="text-xs font-normal text-gray-500 ml-2">
+              ({format(date.from, 'MM.dd', { locale: ko })}
+              {date.to && ` - ${format(date.to, 'MM.dd', { locale: ko })}`})
+            </span>
           )}
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            최근 주문
-            {date?.from && (
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                ({format(date.from, 'MM.dd', { locale: ko })}
-                {date.to && ` - ${format(date.to, 'MM.dd', { locale: ko })}`})
-              </span>
-            )}
-          </h2>
-          <div className="space-y-4">
-            {stats.recentOrders.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">주문이 없습니다</p>
-            ) : (
-              stats.recentOrders.map(order => (
-                <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm truncate max-w-[120px]">{order.id}</p>
-                    <p className="text-sm text-gray-500">
-                      {order.created_at ? new Date(order.created_at).toLocaleDateString('ko-KR') : '-'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">₩{order.total.toLocaleString('ko-KR')}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                      order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                      order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
-                      order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {order.status === 'pending' ? '대기중' :
-                       order.status === 'processing' ? '처리중' :
-                       order.status === 'shipped' ? '배송중' :
-                       order.status === 'delivered' ? '배송완료' :
-                       order.status === 'cancelled' ? '취소됨' : order.status}
-                    </span>
-                  </div>
+        </h2>
+        <div className="space-y-2">
+          {stats.recentOrders.length === 0 ? (
+            <p className="text-gray-500 text-center text-xs py-6">주문이 없습니다</p>
+          ) : (
+            stats.recentOrders.map(order => (
+              <div key={order.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                <div>
+                  <p className="font-medium text-gray-900 text-xs truncate max-w-[120px]">{order.id}</p>
+                  <p className="text-xs text-gray-500">
+                    {order.created_at ? new Date(order.created_at).toLocaleDateString('ko-KR') : '-'}
+                  </p>
                 </div>
-              ))
-            )}
-          </div>
+                <div className="text-right">
+                  <p className="font-medium text-gray-900 text-xs">₩{order.total.toLocaleString('ko-KR')}</p>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                    order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                    order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {order.status === 'pending' ? '대기중' :
+                     order.status === 'processing' ? '처리중' :
+                     order.status === 'shipped' ? '배송중' :
+                     order.status === 'delivered' ? '배송완료' :
+                     order.status === 'cancelled' ? '취소됨' : order.status}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

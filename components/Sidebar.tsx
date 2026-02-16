@@ -34,23 +34,23 @@ export function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-40 flex flex-col">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-blue-600">모두 관리자</h2>
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-base font-bold text-blue-600">모두 관리자</h2>
       </div>
-      <nav className="px-3 py-4 space-y-1 flex-1">
+      <nav className="px-2 py-3 space-y-0.5 flex-1">
         {navItems.map(item => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+              className={`flex items-center px-3 py-2 text-xs font-medium rounded-md transition-colors ${
                 isActive
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
               }`}
             >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
               </svg>
               {item.name}
@@ -58,17 +58,17 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-3 border-t border-gray-200">
         {user && (
-          <div className="mb-3 px-4">
-            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          <div className="mb-2 px-3">
+            <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
           </div>
         )}
         <button
           onClick={signOut}
-          className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 rounded-lg transition-colors hover:bg-red-50 hover:text-red-600"
+          className="flex items-center w-full px-3 py-2 text-xs font-medium text-gray-600 rounded-md transition-colors hover:bg-red-50 hover:text-red-600"
         >
-          <LogOut className="w-5 h-5 mr-3" />
+          <LogOut className="w-4 h-4 mr-2" />
           로그아웃
         </button>
       </div>

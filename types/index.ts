@@ -44,6 +44,20 @@ export interface Brand {
   updated_at?: string | null;
 }
 
+export interface BrandHeroBanner {
+  id: string;
+  brand_id: string;
+  image_link: string;
+  title: string;
+  subtitle: string | null;
+  link: string | null;
+  color: string | null;
+  display_order: number | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 export interface Order {
   id: string;
   user_id: string;

@@ -12,9 +12,10 @@ import { createProduct, updateProduct, deleteProduct, getProductVariants, create
 interface BrandProductsClientProps {
   brand: Brand;
   initialProducts: Product[];
+  embedded?: boolean;
 }
 
-export default function BrandProductsClient({ brand, initialProducts }: BrandProductsClientProps) {
+export default function BrandProductsClient({ brand, initialProducts, embedded }: BrandProductsClientProps) {
   const [products, setProducts] = useState(initialProducts);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -175,46 +176,50 @@ export default function BrandProductsClient({ brand, initialProducts }: BrandPro
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <Link href="/brands" className="hover:text-blue-600">브랜드</Link>
-        <span>/</span>
-        <span className="text-gray-900 font-medium">{brand.name}</span>
-        <span>/</span>
-        <span className="text-gray-900 font-medium">상품</span>
-      </nav>
+      {!embedded && (
+        <>
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+            <Link href="/brands" className="hover:text-blue-600">브랜드</Link>
+            <span>/</span>
+            <span className="text-gray-900 font-medium">{brand.name}</span>
+            <span>/</span>
+            <span className="text-gray-900 font-medium">상품</span>
+          </nav>
 
-      {/* Brand Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-        <div className="relative h-24 md:h-32">
-          {brand.banner && (
-            <Image
-              src={brand.banner}
-              alt={brand.name}
-              fill
-              className="object-cover"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <div className="absolute bottom-3 left-4 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white">
-              {brand.logo && (
+          {/* Brand Header */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+            <div className="relative h-24 md:h-32">
+              {brand.banner && (
                 <Image
-                  src={brand.logo}
+                  src={brand.banner}
                   alt={brand.name}
-                  width={48}
-                  height={48}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               )}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">{brand.name} 상품</h1>
-              <p className="text-sm text-gray-200">{products.length}개 상품</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute bottom-3 left-4 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-white">
+                  {brand.logo && (
+                    <Image
+                      src={brand.logo}
+                      alt={brand.name}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">{brand.name} 상품</h1>
+                  <p className="text-sm text-gray-200">{products.length}개 상품</p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex-1 w-full sm:w-auto">
