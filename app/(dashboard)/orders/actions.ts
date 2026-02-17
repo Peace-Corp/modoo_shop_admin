@@ -26,7 +26,7 @@ export async function fetchOrders(): Promise<{ orders: OrderWithItems[]; error?:
     return { orders: [], error: error.message };
   }
 
-  return { orders: (data || []) as OrderWithItems[] };
+  return { orders: (data || []) as unknown as OrderWithItems[] };
 }
 
 export async function fetchBrands(): Promise<{ id: string; name: string }[]> {

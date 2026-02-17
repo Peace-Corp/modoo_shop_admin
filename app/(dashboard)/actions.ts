@@ -110,7 +110,7 @@ export async function fetchDashboardStats(dateRange?: DateRange): Promise<Dashbo
     totalOrderAmount,
     totalProducts: productsRes.count || 0,
     totalBrands: brandsRes.count || 0,
-    recentOrders: (recentOrdersRes.data || []) as DashboardStats['recentOrders'],
+    recentOrders: (recentOrdersRes.data || []) as unknown as DashboardStats['recentOrders'],
     salesData: (salesRes.data || []) as DashboardStats['salesData'],
     dailyOrderStats,
   };
