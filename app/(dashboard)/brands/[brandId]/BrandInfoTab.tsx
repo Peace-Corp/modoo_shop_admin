@@ -19,6 +19,7 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
   const [isPending, startTransition] = useTransition();
   const [logoUrl, setLogoUrl] = useState(brand.logo || '');
   const [bannerUrl, setBannerUrl] = useState(brand.banner || '');
+  const [orderDetailImageUrl, setOrderDetailImageUrl] = useState(brand.order_detail_image || '');
   const [validPeriodStart, setValidPeriodStart] = useState<Date | undefined>(
     brand.valid_period_start ? new Date(brand.valid_period_start) : undefined
   );
@@ -32,6 +33,7 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
 
     formData.set('logo', logoUrl);
     formData.set('banner', bannerUrl);
+    formData.set('order_detail_image', orderDetailImageUrl);
     formData.set('valid_period_start', validPeriodStart?.toISOString() || '');
     formData.set('valid_period_end', validPeriodEnd?.toISOString() || '');
 
@@ -107,6 +109,13 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
         label="배너"
         aspectRatio="banner"
         helperText="가로형 배너 이미지 (예: 1200x400)"
+      />
+      <ImageUpload
+        value={orderDetailImageUrl}
+        onChange={(url) => setOrderDetailImageUrl(url as string)}
+        label="전체 주문 상세"
+        aspectRatio="video"
+        helperText="주문 상세 페이지에 표시될 이미지"
       />
       <label className="flex items-center">
         <input

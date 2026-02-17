@@ -12,11 +12,12 @@ import { Order, OrderItem } from '@/types';
 import { updateOrderStatus, deleteOrder, fetchOrders } from './actions';
 
 interface OrderWithItems extends Order {
-  order_items?: (OrderItem & { products?: { name: string; images: string[] } })[];
+  order_items?: (OrderItem & { products?: { name: string; images: string[]; brand_id: string } })[];
 }
 
 interface OrdersClientProps {
   initialOrders: OrderWithItems[];
+  brands: { id: string; name: string }[];
 }
 
 const STATUS_CONFIG = [
@@ -54,10 +55,18 @@ const DELIVERY_LABELS: Record<string, string> = {
   international: '해외배송',
 };
 
-export default function OrdersClient({ initialOrders }: OrdersClientProps) {
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  toss: 'Toss',
+  paypal: 'PayPal',
+};
+
+export default function OrdersClient({ initialOrders, brands }: OrdersClientProps) {
   const [orders, setOrders] = useState(initialOrders);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [brandFilter, setBrandFilter] = useState<string[]>([]);
+  const [deliveryFilter, setDeliveryFilter] = useState('');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
   const [isPending, startTransition] = useTransition();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -84,8 +93,19 @@ export default function OrdersClient({ initialOrders }: OrdersClientProps) {
         order.customer_email?.toLowerCase().includes(q)
       );
     }
+    if (brandFilter.length > 0) {
+      result = result.filter(order =>
+        order.order_items?.some(item => item.products && brandFilter.includes(item.products.brand_id))
+      );
+    }
+    if (deliveryFilter) {
+      result = result.filter(order => order.delivery_method === deliveryFilter);
+    }
+    if (paymentMethodFilter) {
+      result = result.filter(order => order.payment_method === paymentMethodFilter);
+    }
     return result;
-  }, [orders, statusFilter, searchQuery]);
+  }, [orders, statusFilter, searchQuery, brandFilter, deliveryFilter, paymentMethodFilter]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -175,6 +195,55 @@ export default function OrdersClient({ initialOrders }: OrdersClientProps) {
           onChange={e => setSearchQuery(e.target.value)}
           className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
         />
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        <div className="relative">
+          <label className="text-[10px] text-gray-500 absolute -top-3.5 left-0">브랜드</label>
+          <div className="flex flex-wrap gap-1 min-h-7 items-center">
+            {brands.map(brand => (
+              <button
+                key={brand.id}
+                onClick={() => setBrandFilter(prev =>
+                  prev.includes(brand.id) ? prev.filter(id => id !== brand.id) : [...prev, brand.id]
+                )}
+                className={`px-2 py-0.5 text-[11px] rounded-md border transition-all ${
+                  brandFilter.includes(brand.id)
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                {brand.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <select
+          value={deliveryFilter}
+          onChange={e => setDeliveryFilter(e.target.value)}
+          className="px-2 py-1 text-[11px] bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="">배송방법 전체</option>
+          <option value="domestic">국내배송</option>
+          <option value="international">해외배송</option>
+        </select>
+        <select
+          value={paymentMethodFilter}
+          onChange={e => setPaymentMethodFilter(e.target.value)}
+          className="px-2 py-1 text-[11px] bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="">결제방법 전체</option>
+          <option value="toss">Toss</option>
+          <option value="paypal">PayPal</option>
+        </select>
+        {(brandFilter.length > 0 || deliveryFilter || paymentMethodFilter) && (
+          <button
+            onClick={() => { setBrandFilter([]); setDeliveryFilter(''); setPaymentMethodFilter(''); }}
+            className="px-2 py-1 text-[11px] text-red-500 hover:text-red-700"
+          >
+            필터 초기화
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">

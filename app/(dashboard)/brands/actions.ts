@@ -51,6 +51,7 @@ export async function updateBrand(id: string, formData: FormData): Promise<{ suc
     logo: formData.get('logo') as string,
     banner: formData.get('banner') as string,
     featured: formData.get('featured') === 'on',
+    order_detail_image: (formData.get('order_detail_image') as string) || null,
     valid_period_start: validPeriodStart || null,
     valid_period_end: validPeriodEnd || null,
     updated_at: new Date().toISOString(),

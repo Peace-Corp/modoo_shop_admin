@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { Order, OrderItem } from '@/types';
 
 interface OrderWithItems extends Order {
-  order_items?: (OrderItem & { products?: { name: string; images: string[] } })[];
+  order_items?: (OrderItem & { products?: { name: string; images: string[]; brand_id: string } })[];
 }
 
 export async function fetchOrders(): Promise<{ orders: OrderWithItems[]; error?: string }> {
@@ -17,7 +17,7 @@ export async function fetchOrders(): Promise<{ orders: OrderWithItems[]; error?:
       *,
       order_items (
         *,
-        products (name, images)
+        products (name, images, brand_id)
       )
     `)
     .order('created_at', { ascending: false });
@@ -27,6 +27,12 @@ export async function fetchOrders(): Promise<{ orders: OrderWithItems[]; error?:
   }
 
   return { orders: (data || []) as OrderWithItems[] };
+}
+
+export async function fetchBrands(): Promise<{ id: string; name: string }[]> {
+  const supabase = createServerClient();
+  const { data } = await supabase.from('brands').select('id, name').order('name');
+  return (data || []) as { id: string; name: string }[];
 }
 
 export async function updateOrderStatus(id: string, status: string): Promise<{ success: boolean; error?: string }> {

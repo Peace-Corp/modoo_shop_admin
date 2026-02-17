@@ -69,6 +69,7 @@ export type Database = {
           id: string
           logo: string
           name: string
+          order_detail_image: string | null
           slug: string
           updated_at: string | null
         }
@@ -81,6 +82,7 @@ export type Database = {
           id: string
           logo: string
           name: string
+          order_detail_image?: string | null
           slug: string
           updated_at?: string | null
         }
@@ -93,6 +95,7 @@ export type Database = {
           id?: string
           logo?: string
           name?: string
+          order_detail_image?: string | null
           slug?: string
           updated_at?: string | null
         }
