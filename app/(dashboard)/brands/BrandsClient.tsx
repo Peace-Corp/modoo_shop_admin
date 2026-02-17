@@ -204,13 +204,15 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
                   required
                 />
               </div>
-              <ImageUpload
-                value={logoUrl}
-                onChange={(url) => setLogoUrl(url as string)}
-                label="로고"
-                aspectRatio="square"
-                helperText="정사각형 이미지 권장 (예: 200x200)"
-              />
+              <div className="max-w-35">
+                <ImageUpload
+                  value={logoUrl}
+                  onChange={(url) => setLogoUrl(url as string)}
+                  label="로고"
+                  aspectRatio="square"
+                  helperText="정사각형 이미지 권장"
+                />
+              </div>
               <ImageUpload
                 value={bannerUrl}
                 onChange={(url) => setBannerUrl(url as string)}

@@ -65,14 +65,14 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
         label="브랜드명"
         defaultValue={brand.name}
         required
-        className="text-sm"
+        className="text-xs"
       />
       <Input
         name="eng_name"
         label="영문명"
         defaultValue={brand.eng_name || ''}
         helperText="브랜드 영문 이름 (선택사항)"
-        className="text-sm"
+        className="text-xs"
       />
       <Input
         name="slug"
@@ -80,25 +80,27 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
         defaultValue={brand.slug}
         helperText="URL에 사용될 이름 (예: my-brand)"
         required
-        className="text-sm"
+        className="text-xs"
       />
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">설명</label>
         <textarea
           name="description"
           rows={2}
-          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           defaultValue={brand.description}
           required
         />
       </div>
-      <ImageUpload
-        value={logoUrl}
-        onChange={(url) => setLogoUrl(url as string)}
-        label="로고"
-        aspectRatio="square"
-        helperText="정사각형 이미지 권장 (예: 200x200)"
-      />
+      <div className="max-w-35">
+        <ImageUpload
+          value={logoUrl}
+          onChange={(url) => setLogoUrl(url as string)}
+          label="로고"
+          aspectRatio="square"
+          helperText="정사각형 이미지 권장"
+        />
+      </div>
       <ImageUpload
         value={bannerUrl}
         onChange={(url) => setBannerUrl(url as string)}

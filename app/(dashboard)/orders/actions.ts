@@ -6,7 +6,6 @@ import { Order, OrderItem } from '@/types';
 
 interface OrderWithItems extends Order {
   order_items?: (OrderItem & { products?: { name: string; images: string[] } })[];
-  profiles?: { name: string; email: string };
 }
 
 export async function fetchOrders(): Promise<{ orders: OrderWithItems[]; error?: string }> {
@@ -19,8 +18,7 @@ export async function fetchOrders(): Promise<{ orders: OrderWithItems[]; error?:
       order_items (
         *,
         products (name, images)
-      ),
-      profiles (name, email)
+      )
     `)
     .order('created_at', { ascending: false });
 
@@ -40,6 +38,22 @@ export async function updateOrderStatus(id: string, status: string): Promise<{ s
       status,
       updated_at: new Date().toISOString(),
     })
+    .eq('id', id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/orders');
+  return { success: true };
+}
+
+export async function deleteOrder(id: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = createServerClient();
+
+  const { error } = await supabase
+    .from('orders')
+    .delete()
     .eq('id', id);
 
   if (error) {

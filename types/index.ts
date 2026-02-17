@@ -60,17 +60,23 @@ export interface BrandHeroBanner {
 
 export interface Order {
   id: string;
-  user_id: string;
+  user_id: string | null;
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   payment_method: string;
   payment_status: 'pending' | 'completed' | 'failed';
-  shipping_street: string;
-  shipping_city: string;
-  shipping_state: string;
+  shipping_address_line_one: string;
+  shipping_address_line_two?: string | null;
+  shipping_city?: string | null;
+  shipping_state?: string | null;
   shipping_zip_code: string;
-  shipping_country: string;
-  shipping_phone: string;
+  shipping_country?: string | null;
+  customer_phone: string;
+  customer_name?: string | null;
+  customer_email?: string | null;
+  order_name?: string | null;
+  payment_id?: string | null;
+  delivery_method: string;
   created_at?: string | null;
   updated_at?: string | null;
 }
