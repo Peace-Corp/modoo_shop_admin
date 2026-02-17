@@ -103,20 +103,24 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
           helperText="정사각형 이미지 권장"
         />
       </div>
-      <ImageUpload
-        value={bannerUrl}
-        onChange={(url) => setBannerUrl(url as string)}
-        label="배너"
-        aspectRatio="banner"
-        helperText="가로형 배너 이미지 (예: 1200x400)"
-      />
-      <ImageUpload
-        value={orderDetailImageUrl}
-        onChange={(url) => setOrderDetailImageUrl(url as string)}
-        label="전체 주문 상세"
-        aspectRatio="video"
-        helperText="주문 상세 페이지에 표시될 이미지"
-      />
+      <div className="max-w-xs">
+        <ImageUpload
+          value={bannerUrl}
+          onChange={(url) => setBannerUrl(url as string)}
+          label="배너"
+          aspectRatio="banner"
+          helperText="가로형 배너 이미지 (예: 1200x400)"
+        />
+      </div>
+      <div className="max-w-xs">
+        <ImageUpload
+          value={orderDetailImageUrl}
+          onChange={(url) => setOrderDetailImageUrl(url as string)}
+          label="전체 주문 상세"
+          aspectRatio="video"
+          helperText="주문 상세 페이지에 표시될 이미지"
+        />
+      </div>
       <label className="flex items-center">
         <input
           type="checkbox"
