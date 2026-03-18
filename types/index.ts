@@ -36,11 +36,19 @@ export interface Brand {
   slug: string;
   logo: string;
   banner: string;
+  brand_color?: string | null;
   description: string;
   featured?: boolean | null;
   order_detail_image?: string | null;
   valid_period_start?: string | null;
   valid_period_end?: string | null;
+  delivery_domestic_enabled: boolean;
+  delivery_domestic_price: number;
+  delivery_international_enabled: boolean;
+  delivery_international_price: number;
+  delivery_pickup_enabled: boolean;
+  delivery_pickup_price: number;
+  delivery_pickup_address?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -78,6 +86,7 @@ export interface Order {
   order_name?: string | null;
   payment_id?: string | null;
   delivery_method: string;
+  shipping_cost: number;
   created_at?: string | null;
   updated_at?: string | null;
 }

@@ -22,6 +22,7 @@ import {
   updateBrandHeroBanner,
   deleteBrandHeroBanner,
 } from './actions';
+import { toast } from 'sonner';
 
 interface BrandHeroBannersClientProps {
   brand: Brand;
@@ -122,12 +123,18 @@ export default function BrandHeroBannersClient({
             )
           );
           closeDialog();
+          toast.success('배너가 수정되었습니다.');
+        } else {
+          toast.error('배너 수정에 실패했습니다.');
         }
       } else {
         const result = await createBrandHeroBanner(brand.id, bannerData);
         if (result.success && result.banner) {
           setBanners(prev => [...prev, result.banner!]);
           closeDialog();
+          toast.success('배너가 추가되었습니다.');
+        } else {
+          toast.error('배너 추가에 실패했습니다.');
         }
       }
     });
@@ -139,6 +146,9 @@ export default function BrandHeroBannersClient({
       const result = await deleteBrandHeroBanner(brand.id, id);
       if (result.success) {
         setBanners(prev => prev.filter(b => b.id !== id));
+        toast.success('배너가 삭제되었습니다.');
+      } else {
+        toast.error('배너 삭제에 실패했습니다.');
       }
     });
   };

@@ -9,6 +9,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Brand, Product } from '@/types';
 import { createBrand } from './actions';
+import { toast } from 'sonner';
 
 interface BrandsClientProps {
   initialBrands: Brand[];
@@ -68,6 +69,9 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
       const result = await createBrand(formData);
       if (result.success && result.data) {
         setBrands(prev => [result.data!, ...prev]);
+        toast.success('브랜드가 추가되었습니다.');
+      } else {
+        toast.error(result.error || '브랜드 추가에 실패했습니다.');
       }
       setIsModalOpen(false);
     });
@@ -220,6 +224,18 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
                 aspectRatio="banner"
                 helperText="가로형 배너 이미지 (예: 1200x400)"
               />
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">브랜드 컬러</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    name="brand_color"
+                    defaultValue="#ffffff"
+                    className="w-9 h-9 rounded border border-gray-200 cursor-pointer p-0.5"
+                  />
+                  <span className="text-xs text-gray-500">페이지 배경색</span>
+                </div>
+              </div>
               <label className="flex items-center">
                 <input
                   type="checkbox"

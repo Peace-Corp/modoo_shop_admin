@@ -22,6 +22,7 @@ import {
   deleteHeroBanner,
   fetchHeroBanners,
 } from './actions';
+import { toast } from 'sonner';
 
 interface ContentClientProps {
   initialBanners: HeroBanner[];
@@ -115,12 +116,18 @@ export default function ContentClient({ initialBanners }: ContentClientProps) {
             b.id === editingBanner.id ? { ...b, ...bannerData, updated_at: new Date().toISOString() } : b
           ));
           closeDialog();
+          toast.success('배너가 수정되었습니다.');
+        } else {
+          toast.error('배너 수정에 실패했습니다.');
         }
       } else {
         const result = await createHeroBanner(bannerData);
         if (result.success && result.banner) {
           setBanners(prev => [...prev, result.banner!]);
           closeDialog();
+          toast.success('배너가 추가되었습니다.');
+        } else {
+          toast.error('배너 추가에 실패했습니다.');
         }
       }
     });
@@ -133,6 +140,9 @@ export default function ContentClient({ initialBanners }: ContentClientProps) {
       const result = await deleteHeroBanner(id);
       if (result.success) {
         setBanners(prev => prev.filter(b => b.id !== id));
+        toast.success('배너가 삭제되었습니다.');
+      } else {
+        toast.error('배너 삭제에 실패했습니다.');
       }
     });
   };

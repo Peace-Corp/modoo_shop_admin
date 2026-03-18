@@ -62,6 +62,7 @@ export type Database = {
       brands: {
         Row: {
           banner: string
+          brand_color: string | null
           created_at: string | null
           description: string
           eng_name: string | null
@@ -75,6 +76,7 @@ export type Database = {
         }
         Insert: {
           banner: string
+          brand_color?: string | null
           created_at?: string | null
           description: string
           eng_name?: string | null
@@ -88,6 +90,7 @@ export type Database = {
         }
         Update: {
           banner?: string
+          brand_color?: string | null
           created_at?: string | null
           description?: string
           eng_name?: string | null

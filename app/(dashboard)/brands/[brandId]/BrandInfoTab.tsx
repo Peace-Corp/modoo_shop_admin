@@ -8,6 +8,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Brand } from '@/types';
 import { updateBrand, deleteBrand } from '../actions';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface BrandInfoTabProps {
   brand: Brand;
@@ -26,6 +27,13 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
   const [validPeriodEnd, setValidPeriodEnd] = useState<Date | undefined>(
     brand.valid_period_end ? new Date(brand.valid_period_end) : undefined
   );
+  const [domesticEnabled, setDomesticEnabled] = useState(brand.delivery_domestic_enabled);
+  const [domesticPrice, setDomesticPrice] = useState(brand.delivery_domestic_price);
+  const [internationalEnabled, setInternationalEnabled] = useState(brand.delivery_international_enabled);
+  const [internationalPrice, setInternationalPrice] = useState(brand.delivery_international_price);
+  const [pickupEnabled, setPickupEnabled] = useState(brand.delivery_pickup_enabled);
+  const [pickupPrice, setPickupPrice] = useState(brand.delivery_pickup_price);
+  const [pickupAddress, setPickupAddress] = useState(brand.delivery_pickup_address || '');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,18 +44,28 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
     formData.set('order_detail_image', orderDetailImageUrl);
     formData.set('valid_period_start', validPeriodStart?.toISOString() || '');
     formData.set('valid_period_end', validPeriodEnd?.toISOString() || '');
+    if (domesticEnabled) formData.set('delivery_domestic_enabled', 'on');
+    formData.set('delivery_domestic_price', String(domesticPrice));
+    if (internationalEnabled) formData.set('delivery_international_enabled', 'on');
+    formData.set('delivery_international_price', String(internationalPrice));
+    if (pickupEnabled) formData.set('delivery_pickup_enabled', 'on');
+    formData.set('delivery_pickup_price', String(pickupPrice));
+    formData.set('delivery_pickup_address', pickupAddress);
 
     startTransition(async () => {
       const result = await updateBrand(brand.id, formData);
       if (result.success) {
         router.refresh();
+        toast.success('변경사항이 저장되었습니다.');
+      } else {
+        toast.error(result.error || '저장에 실패했습니다.');
       }
     });
   };
 
   const handleDelete = async () => {
     if (productCount > 0) {
-      alert(`${productCount}개의 상품이 있는 브랜드는 삭제할 수 없습니다. 먼저 상품을 삭제해주세요.`);
+      toast.error(`${productCount}개의 상품이 있는 브랜드는 삭제할 수 없습니다. 먼저 상품을 삭제해주세요.`);
       return;
     }
     if (!confirm('이 브랜드를 삭제하시겠습니까?')) return;
@@ -55,7 +73,10 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
     startTransition(async () => {
       const result = await deleteBrand(brand.id);
       if (result.success) {
+        toast.success('브랜드가 삭제되었습니다.');
         router.push('/brands');
+      } else {
+        toast.error(result.error || '삭제에 실패했습니다.');
       }
     });
   };
@@ -121,6 +142,18 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
           helperText="주문 상세 페이지에 표시될 이미지"
         />
       </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1">브랜드 컬러</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            name="brand_color"
+            defaultValue={brand.brand_color || '#ffffff'}
+            className="w-9 h-9 rounded border border-gray-200 cursor-pointer p-0.5"
+          />
+          <span className="text-xs text-gray-500">페이지 배경색으로 사용됩니다</span>
+        </div>
+      </div>
       <label className="flex items-center">
         <input
           type="checkbox"
@@ -146,6 +179,80 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
           helperText="비워두면 무기한"
         />
       </div>
+      {/* Delivery Options */}
+      <div className="pt-3 border-t border-gray-100">
+        <label className="block text-xs font-medium text-gray-700 mb-2">배송 옵션</label>
+        <div className="space-y-2">
+          {/* Domestic */}
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={domesticEnabled}
+              onChange={(e) => setDomesticEnabled(e.target.checked)}
+              className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="text-xs text-gray-700 w-16 shrink-0">국내배송</span>
+            <input
+              type="number"
+              value={domesticPrice}
+              onChange={(e) => setDomesticPrice(parseInt(e.target.value) || 0)}
+              disabled={!domesticEnabled}
+              className="w-24 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+            />
+            <span className="text-xs text-gray-500">원</span>
+          </div>
+          {/* International */}
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={internationalEnabled}
+              onChange={(e) => setInternationalEnabled(e.target.checked)}
+              className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="text-xs text-gray-700 w-16 shrink-0">해외배송</span>
+            <input
+              type="number"
+              value={internationalPrice}
+              onChange={(e) => setInternationalPrice(parseInt(e.target.value) || 0)}
+              disabled={!internationalEnabled}
+              className="w-24 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+            />
+            <span className="text-xs text-gray-500">원</span>
+          </div>
+          {/* Pickup */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={pickupEnabled}
+                onChange={(e) => setPickupEnabled(e.target.checked)}
+                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-xs text-gray-700 w-16 shrink-0">현장수령</span>
+              <input
+                type="number"
+                value={pickupPrice}
+                onChange={(e) => setPickupPrice(parseInt(e.target.value) || 0)}
+                disabled={!pickupEnabled}
+                className="w-24 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+              />
+              <span className="text-xs text-gray-500">원</span>
+            </div>
+            {pickupEnabled && (
+              <div className="ml-7">
+                <input
+                  type="text"
+                  value={pickupAddress}
+                  onChange={(e) => setPickupAddress(e.target.value)}
+                  placeholder="수령 장소 주소"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <button
           type="button"

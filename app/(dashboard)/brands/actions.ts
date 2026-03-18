@@ -18,9 +18,17 @@ export async function createBrand(formData: FormData): Promise<{ success: boolea
     description: formData.get('description') as string,
     logo: formData.get('logo') as string,
     banner: formData.get('banner') as string,
+    brand_color: (formData.get('brand_color') as string) || null,
     featured: formData.get('featured') === 'on',
     valid_period_start: validPeriodStart || null,
     valid_period_end: validPeriodEnd || null,
+    delivery_domestic_enabled: formData.get('delivery_domestic_enabled') === 'on',
+    delivery_domestic_price: parseInt(formData.get('delivery_domestic_price') as string) || 3000,
+    delivery_international_enabled: formData.get('delivery_international_enabled') === 'on',
+    delivery_international_price: parseInt(formData.get('delivery_international_price') as string) || 15000,
+    delivery_pickup_enabled: formData.get('delivery_pickup_enabled') === 'on',
+    delivery_pickup_price: parseInt(formData.get('delivery_pickup_price') as string) || 0,
+    delivery_pickup_address: (formData.get('delivery_pickup_address') as string) || null,
   };
 
   const { data, error } = await supabase
@@ -50,10 +58,18 @@ export async function updateBrand(id: string, formData: FormData): Promise<{ suc
     description: formData.get('description') as string,
     logo: formData.get('logo') as string,
     banner: formData.get('banner') as string,
+    brand_color: (formData.get('brand_color') as string) || null,
     featured: formData.get('featured') === 'on',
     order_detail_image: (formData.get('order_detail_image') as string) || null,
     valid_period_start: validPeriodStart || null,
     valid_period_end: validPeriodEnd || null,
+    delivery_domestic_enabled: formData.get('delivery_domestic_enabled') === 'on',
+    delivery_domestic_price: parseInt(formData.get('delivery_domestic_price') as string) || 3000,
+    delivery_international_enabled: formData.get('delivery_international_enabled') === 'on',
+    delivery_international_price: parseInt(formData.get('delivery_international_price') as string) || 15000,
+    delivery_pickup_enabled: formData.get('delivery_pickup_enabled') === 'on',
+    delivery_pickup_price: parseInt(formData.get('delivery_pickup_price') as string) || 0,
+    delivery_pickup_address: (formData.get('delivery_pickup_address') as string) || null,
     updated_at: new Date().toISOString(),
   };
 

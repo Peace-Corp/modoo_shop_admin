@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Product, Brand, ProductVariant } from '@/types';
 import { createProduct, updateProduct, deleteProduct, getProductVariants, createVariant, updateVariant, deleteVariant } from './actions';
+import { toast } from 'sonner';
 
 interface BrandProductsClientProps {
   brand: Brand;
@@ -89,10 +90,12 @@ export default function BrandProductsClient({ brand, initialProducts, embedded }
         setNewVariantSize('');
         setNewVariantStock(0);
         setIsAddingVariant(false);
-        // Update product stock display
         const totalStock = updatedVariants.reduce((sum, v) => sum + v.stock, 0);
         setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, stock: totalStock } : p));
         setEditingProduct({ ...editingProduct, stock: totalStock });
+        toast.success('사이즈 옵션이 추가되었습니다.');
+      } else {
+        toast.error('사이즈 옵션 추가에 실패했습니다.');
       }
     });
   };
@@ -106,10 +109,12 @@ export default function BrandProductsClient({ brand, initialProducts, embedded }
         const updatedVariants = variants.map(v => v.id === variantId ? result.data! : v);
         setVariants(updatedVariants);
         setEditingVariantId(null);
-        // Update product stock display
         const totalStock = updatedVariants.reduce((sum, v) => sum + v.stock, 0);
         setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, stock: totalStock } : p));
         setEditingProduct({ ...editingProduct, stock: totalStock });
+        toast.success('재고가 수정되었습니다.');
+      } else {
+        toast.error('재고 수정에 실패했습니다.');
       }
     });
   };
@@ -122,10 +127,12 @@ export default function BrandProductsClient({ brand, initialProducts, embedded }
       if (result.success) {
         const updatedVariants = variants.filter(v => v.id !== variantId);
         setVariants(updatedVariants);
-        // Update product stock display
         const totalStock = updatedVariants.reduce((sum, v) => sum + v.stock, 0);
         setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, stock: totalStock } : p));
         setEditingProduct({ ...editingProduct, stock: totalStock });
+        toast.success('사이즈 옵션이 삭제되었습니다.');
+      } else {
+        toast.error('삭제에 실패했습니다.');
       }
     });
   };
@@ -150,14 +157,19 @@ export default function BrandProductsClient({ brand, initialProducts, embedded }
         if (result.success && result.data) {
           setProducts(prev => prev.map(p => p.id === editingProduct.id ? result.data! : p));
           setEditingProduct(result.data);
+          toast.success('상품이 수정되었습니다.');
+        } else {
+          toast.error(result.error || '상품 수정에 실패했습니다.');
         }
       } else {
         const result = await createProduct(brand.id, formData);
         if (result.success && result.data) {
           setProducts(prev => [result.data!, ...prev]);
-          // Switch to edit mode for the new product to allow adding variants
           setEditingProduct(result.data);
           setActiveTab('variants');
+          toast.success('상품이 추가되었습니다.');
+        } else {
+          toast.error(result.error || '상품 추가에 실패했습니다.');
         }
       }
     });
@@ -170,6 +182,9 @@ export default function BrandProductsClient({ brand, initialProducts, embedded }
       const result = await deleteProduct(brand.id, id);
       if (result.success) {
         setProducts(prev => prev.filter(p => p.id !== id));
+        toast.success('상품이 삭제되었습니다.');
+      } else {
+        toast.error(result.error || '삭제에 실패했습니다.');
       }
     });
   };
