@@ -111,6 +111,7 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
                   src={brand.banner}
                   alt={brand.name}
                   fill
+                  unoptimized
                   className="object-cover"
                 />
               )}
@@ -123,6 +124,7 @@ export default function BrandsClient({ initialBrands, products }: BrandsClientPr
                       alt={brand.name}
                       width={40}
                       height={40}
+                      unoptimized
                       className="w-full h-full object-cover"
                     />
                   )}

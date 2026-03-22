@@ -185,7 +185,7 @@ export default function BrandHeroBannersClient({
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mb-4">
             <div className="relative h-20 md:h-28">
               {brand.banner && (
-                <Image src={brand.banner} alt={brand.name} fill className="object-cover" />
+                <Image src={brand.banner} alt={brand.name} fill unoptimized className="object-cover" />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-2 left-3 flex items-center gap-2">
@@ -196,6 +196,7 @@ export default function BrandHeroBannersClient({
                       alt={brand.name}
                       width={40}
                       height={40}
+                      unoptimized
                       className="w-full h-full object-cover"
                     />
                   )}
@@ -262,6 +263,7 @@ export default function BrandHeroBannersClient({
                     src={banner.image_link}
                     alt={banner.title}
                     fill
+                    unoptimized
                     className="object-cover"
                   />
                   {!banner.is_active && (

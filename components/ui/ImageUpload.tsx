@@ -213,6 +213,7 @@ export function ImageUpload({
                 src={url}
                 alt={`Preview ${index + 1}`}
                 fill
+                unoptimized
                 className="object-cover pointer-events-none"
               />
               {/* Position indicator for multiple images */}

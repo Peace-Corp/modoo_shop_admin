@@ -87,57 +87,103 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <Input
-        name="name"
-        label="브랜드명"
-        defaultValue={brand.name}
-        required
-        className="text-xs"
-      />
-      <Input
-        name="eng_name"
-        label="영문명"
-        defaultValue={brand.eng_name || ''}
-        helperText="브랜드 영문 이름 (선택사항)"
-        className="text-xs"
-      />
-      <Input
-        name="slug"
-        label="슬러그"
-        defaultValue={brand.slug}
-        helperText="URL에 사용될 이름 (예: my-brand)"
-        required
-        className="text-xs"
-      />
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">설명</label>
-        <textarea
-          name="description"
-          rows={2}
-          className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-          defaultValue={brand.description}
-          required
-        />
+      {/* 2-column grid for desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-3">
+        {/* Left column: Text fields */}
+        <div className="space-y-3">
+          <Input
+            name="name"
+            label="브랜드명"
+            defaultValue={brand.name}
+            required
+            className="text-xs"
+          />
+          <Input
+            name="eng_name"
+            label="영문명"
+            defaultValue={brand.eng_name || ''}
+            helperText="브랜드 영문 이름 (선택사항)"
+            className="text-xs"
+          />
+          <Input
+            name="slug"
+            label="슬러그"
+            defaultValue={brand.slug}
+            helperText="URL에 사용될 이름 (예: my-brand)"
+            required
+            className="text-xs"
+          />
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">설명</label>
+            <textarea
+              name="description"
+              rows={2}
+              className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              defaultValue={brand.description}
+              required
+            />
+          </div>
+        </div>
+
+        {/* Right column: Images, color, featured, dates */}
+        <div className="space-y-3">
+          <div className="max-w-35">
+            <ImageUpload
+              value={logoUrl}
+              onChange={(url) => setLogoUrl(url as string)}
+              label="로고"
+              aspectRatio="square"
+              helperText="정사각형 이미지 권장"
+            />
+          </div>
+          <ImageUpload
+            value={bannerUrl}
+            onChange={(url) => setBannerUrl(url as string)}
+            label="배너"
+            aspectRatio="banner"
+            helperText="가로형 배너 이미지 (예: 1200x400)"
+          />
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">브랜드 컬러</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                name="brand_color"
+                defaultValue={brand.brand_color || '#ffffff'}
+                className="w-9 h-9 rounded border border-gray-200 cursor-pointer p-0.5"
+              />
+              <span className="text-xs text-gray-500">페이지 배경색으로 사용됩니다</span>
+            </div>
+          </div>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              name="featured"
+              className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              defaultChecked={brand.featured || false}
+            />
+            <span className="ml-2 text-xs text-gray-700">추천 브랜드</span>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <DatePicker
+              value={validPeriodStart}
+              onChange={setValidPeriodStart}
+              label="판매 시작일"
+              placeholder="시작일 선택"
+              helperText="비워두면 즉시 시작"
+            />
+            <DatePicker
+              value={validPeriodEnd}
+              onChange={setValidPeriodEnd}
+              label="판매 종료일"
+              placeholder="종료일 선택"
+              helperText="비워두면 무기한"
+            />
+          </div>
+        </div>
       </div>
-      <div className="max-w-35">
-        <ImageUpload
-          value={logoUrl}
-          onChange={(url) => setLogoUrl(url as string)}
-          label="로고"
-          aspectRatio="square"
-          helperText="정사각형 이미지 권장"
-        />
-      </div>
-      <div className="max-w-xs">
-        <ImageUpload
-          value={bannerUrl}
-          onChange={(url) => setBannerUrl(url as string)}
-          label="배너"
-          aspectRatio="banner"
-          helperText="가로형 배너 이미지 (예: 1200x400)"
-        />
-      </div>
-      {/* Detail Images List */}
+
+      {/* Detail Images List - full width */}
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">상세 이미지</label>
         <p className="text-[10px] text-gray-400 mb-2">각 항목은 단일 이미지 또는 스와이퍼 그룹(여러 이미지)이 될 수 있습니다.</p>
@@ -225,112 +271,83 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
           + 이미지 항목 추가
         </button>
       </div>
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">브랜드 컬러</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            name="brand_color"
-            defaultValue={brand.brand_color || '#ffffff'}
-            className="w-9 h-9 rounded border border-gray-200 cursor-pointer p-0.5"
-          />
-          <span className="text-xs text-gray-500">페이지 배경색으로 사용됩니다</span>
-        </div>
-      </div>
-      <label className="flex items-center">
-        <input
-          type="checkbox"
-          name="featured"
-          className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-          defaultChecked={brand.featured || false}
-        />
-        <span className="ml-2 text-xs text-gray-700">추천 브랜드</span>
-      </label>
-      <div className="grid grid-cols-2 gap-3">
-        <DatePicker
-          value={validPeriodStart}
-          onChange={setValidPeriodStart}
-          label="판매 시작일"
-          placeholder="시작일 선택"
-          helperText="비워두면 즉시 시작"
-        />
-        <DatePicker
-          value={validPeriodEnd}
-          onChange={setValidPeriodEnd}
-          label="판매 종료일"
-          placeholder="종료일 선택"
-          helperText="비워두면 무기한"
-        />
-      </div>
       {/* Delivery Options */}
       <div className="pt-3 border-t border-gray-100">
         <label className="block text-xs font-medium text-gray-700 mb-2">배송 옵션</label>
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Domestic */}
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={domesticEnabled}
-              onChange={(e) => setDomesticEnabled(e.target.checked)}
-              className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span className="text-xs text-gray-700 w-16 shrink-0">국내배송</span>
-            <input
-              type="number"
-              value={domesticPrice}
-              onChange={(e) => setDomesticPrice(parseInt(e.target.value) || 0)}
-              disabled={!domesticEnabled}
-              className="w-24 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
-            />
-            <span className="text-xs text-gray-500">원</span>
+          <div className="border border-gray-200 rounded-md p-2.5">
+            <div className="flex items-center gap-2 mb-1.5">
+              <input
+                type="checkbox"
+                checked={domesticEnabled}
+                onChange={(e) => setDomesticEnabled(e.target.checked)}
+                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-xs font-medium text-gray-700">국내배송</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                value={domesticPrice}
+                onChange={(e) => setDomesticPrice(parseInt(e.target.value) || 0)}
+                disabled={!domesticEnabled}
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+              />
+              <span className="text-xs text-gray-500 shrink-0">원</span>
+            </div>
           </div>
           {/* International */}
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={internationalEnabled}
-              onChange={(e) => setInternationalEnabled(e.target.checked)}
-              className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span className="text-xs text-gray-700 w-16 shrink-0">해외배송</span>
-            <input
-              type="number"
-              value={internationalPrice}
-              onChange={(e) => setInternationalPrice(parseInt(e.target.value) || 0)}
-              disabled={!internationalEnabled}
-              className="w-24 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
-            />
-            <span className="text-xs text-gray-500">원</span>
+          <div className="border border-gray-200 rounded-md p-2.5">
+            <div className="flex items-center gap-2 mb-1.5">
+              <input
+                type="checkbox"
+                checked={internationalEnabled}
+                onChange={(e) => setInternationalEnabled(e.target.checked)}
+                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-xs font-medium text-gray-700">해외배송</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                value={internationalPrice}
+                onChange={(e) => setInternationalPrice(parseInt(e.target.value) || 0)}
+                disabled={!internationalEnabled}
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+              />
+              <span className="text-xs text-gray-500 shrink-0">원</span>
+            </div>
           </div>
           {/* Pickup */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
+          <div className="border border-gray-200 rounded-md p-2.5">
+            <div className="flex items-center gap-2 mb-1.5">
               <input
                 type="checkbox"
                 checked={pickupEnabled}
                 onChange={(e) => setPickupEnabled(e.target.checked)}
                 className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <span className="text-xs text-gray-700 w-16 shrink-0">현장수령</span>
+              <span className="text-xs font-medium text-gray-700">현장수령</span>
+            </div>
+            <div className="flex items-center gap-1.5 mb-1.5">
               <input
                 type="number"
                 value={pickupPrice}
                 onChange={(e) => setPickupPrice(parseInt(e.target.value) || 0)}
                 disabled={!pickupEnabled}
-                className="w-24 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
               />
-              <span className="text-xs text-gray-500">원</span>
+              <span className="text-xs text-gray-500 shrink-0">원</span>
             </div>
             {pickupEnabled && (
-              <div className="ml-7">
-                <input
-                  type="text"
-                  value={pickupAddress}
-                  onChange={(e) => setPickupAddress(e.target.value)}
-                  placeholder="수령 장소 주소"
-                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                />
-              </div>
+              <input
+                type="text"
+                value={pickupAddress}
+                onChange={(e) => setPickupAddress(e.target.value)}
+                placeholder="수령 장소 주소"
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              />
             )}
           </div>
         </div>

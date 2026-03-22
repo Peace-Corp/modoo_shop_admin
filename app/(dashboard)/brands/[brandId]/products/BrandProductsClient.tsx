@@ -210,6 +210,7 @@ export default function BrandProductsClient({ brand, initialProducts, embedded }
                   src={brand.banner}
                   alt={brand.name}
                   fill
+                  unoptimized
                   className="object-cover"
                 />
               )}
@@ -222,6 +223,7 @@ export default function BrandProductsClient({ brand, initialProducts, embedded }
                       alt={brand.name}
                       width={48}
                       height={48}
+                      unoptimized
                       className="w-full h-full object-cover"
                     />
                   )}
@@ -286,6 +288,7 @@ export default function BrandProductsClient({ brand, initialProducts, embedded }
                               alt={product.name}
                               width={40}
                               height={40}
+                              unoptimized
                               className="w-full h-full object-cover"
                             />
                           )}

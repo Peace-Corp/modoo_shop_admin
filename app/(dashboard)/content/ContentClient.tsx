@@ -160,37 +160,37 @@ export default function ContentClient({ initialBanners }: ContentClientProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">콘텐츠 관리</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-lg font-bold text-gray-900">콘텐츠 관리</h1>
       </div>
 
       <Tabs defaultValue="banners" className="w-full">
-        <TabsList className="mb-6">
+        <TabsList className="mb-4">
           <TabsTrigger value="banners">히어로 배너</TabsTrigger>
         </TabsList>
 
         <TabsContent value="banners">
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">배너 목록</h2>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={refreshBanners} disabled={isRefreshing}>
-                  <svg className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-900">배너 목록</h2>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" onClick={refreshBanners} disabled={isRefreshing}>
+                  <svg className={`w-3.5 h-3.5 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  {isRefreshing ? '로딩중...' : '새로고침'}
+                  <span className="text-xs">{isRefreshing ? '로딩중...' : '새로고침'}</span>
                 </Button>
-                <Button onClick={openCreateDialog}>
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Button size="sm" onClick={openCreateDialog}>
+                  <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  배너 추가
+                  <span className="text-xs">배너 추가</span>
                 </Button>
               </div>
             </div>
 
             {banners.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-500">
+              <div className="bg-white rounded-lg border border-gray-100 p-8 text-center text-xs text-gray-500">
                 등록된 배너가 없습니다
               </div>
             ) : (
@@ -198,7 +198,7 @@ export default function ContentClient({ initialBanners }: ContentClientProps) {
                 {banners.map((banner) => (
                   <div
                     key={banner.id}
-                    className="bg-white rounded-xl border border-gray-100 overflow-hidden"
+                    className="bg-white rounded-lg border border-gray-100 overflow-hidden"
                   >
                     <div className="flex flex-col md:flex-row">
                       <div className="relative w-full md:w-64 h-40 md:h-auto flex-shrink-0 bg-gray-100">
@@ -206,6 +206,7 @@ export default function ContentClient({ initialBanners }: ContentClientProps) {
                           src={banner.image_link}
                           alt={banner.title}
                           fill
+                          unoptimized
                           className="object-cover"
                         />
                         {!banner.is_active && (
@@ -220,7 +221,7 @@ export default function ContentClient({ initialBanners }: ContentClientProps) {
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-gray-900 truncate">{banner.title}</h3>
+                              <h3 className="text-sm font-semibold text-gray-900 truncate">{banner.title}</h3>
                               <span className="text-xs text-gray-400">#{banner.display_order}</span>
                             </div>
                             {banner.subtitle && (

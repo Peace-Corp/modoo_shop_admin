@@ -1,13 +1,8 @@
 'use client';
 
-import { useState, useTransition, useMemo, useCallback } from 'react';
+import { useState, useTransition, useMemo, useCallback, useEffect, Fragment } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { ChevronDown } from 'lucide-react';
 import { Order, OrderItem } from '@/types';
 import { updateOrderStatus, deleteOrder, fetchOrders } from './actions';
 
@@ -53,12 +48,15 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
 const DELIVERY_LABELS: Record<string, string> = {
   domestic: '국내배송',
   international: '해외배송',
+  pickup: '현장수령',
 };
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   toss: 'Toss',
   paypal: 'PayPal',
 };
+
+const ITEMS_PER_PAGE = 20;
 
 export default function OrdersClient({ initialOrders, brands }: OrdersClientProps) {
   const [orders, setOrders] = useState(initialOrders);
@@ -69,6 +67,8 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
   const [isPending, startTransition] = useTransition();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const refreshOrders = useCallback(async () => {
     setIsRefreshing(true);
@@ -107,6 +107,16 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
     return result;
   }, [orders, statusFilter, searchQuery, brandFilter, deliveryFilter, paymentMethodFilter]);
 
+  // Reset page on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery, brandFilter, deliveryFilter, paymentMethodFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ITEMS_PER_PAGE));
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endIndex = Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length);
+
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const { key } of STATUS_CONFIG) {
@@ -137,13 +147,41 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
       const result = await deleteOrder(orderId);
       if (result.success) {
         setOrders(prev => prev.filter(o => o.id !== orderId));
+        if (expandedOrderId === orderId) setExpandedOrderId(null);
       }
     });
-  }, []);
+  }, [expandedOrderId]);
 
   const handleFilterClick = useCallback((key: string) => {
     setStatusFilter(prev => prev === key ? '' : key);
   }, []);
+
+  const toggleExpand = useCallback((orderId: string) => {
+    setExpandedOrderId(prev => prev === orderId ? null : orderId);
+  }, []);
+
+  const exportToCSV = useCallback(() => {
+    const headers = ['주문번호', '고객명', '이메일', '연락처', '배송방법', '결제방법', '금액', '상태', '주문일'];
+    const rows = filteredOrders.map(order => [
+      order.id,
+      order.customer_name || '게스트',
+      order.customer_email || '',
+      order.customer_phone,
+      DELIVERY_LABELS[order.delivery_method] || order.delivery_method,
+      PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method,
+      order.total,
+      STATUS_LABELS[order.status],
+      order.created_at ? new Date(order.created_at).toLocaleDateString('ko-KR') : '',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orders_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [filteredOrders]);
 
   return (
     <div>
@@ -156,7 +194,7 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
             </svg>
             <span className="text-xs">{isRefreshing ? '로딩중...' : '새로고침'}</span>
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={exportToCSV}>
             <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -226,6 +264,7 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
           <option value="">배송방법 전체</option>
           <option value="domestic">국내배송</option>
           <option value="international">해외배송</option>
+          <option value="pickup">현장수령</option>
         </select>
         <select
           value={paymentMethodFilter}
@@ -252,39 +291,85 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
             주문이 없습니다
           </div>
         ) : (
-          <Accordion type="single" collapsible className="w-full">
-            {filteredOrders.map(order => (
-              <OrderAccordionItem
-                key={order.id}
-                order={order}
-                isPending={isPending}
-                onStatusUpdate={handleStatusUpdate}
-                onDelete={handleDelete}
-              />
-            ))}
-          </Accordion>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">주문번호</th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">고객</th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">이메일</th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">배송</th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+                  <th className="px-3 py-2 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">금액</th>
+                  <th className="px-3 py-2 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                  <th className="px-2 py-2 w-8"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {paginatedOrders.map(order => (
+                  <OrderTableRow
+                    key={order.id}
+                    order={order}
+                    isExpanded={expandedOrderId === order.id}
+                    isPending={isPending}
+                    onToggle={toggleExpand}
+                    onStatusUpdate={handleStatusUpdate}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        <div className="px-3 py-2 border-t border-gray-100">
+        <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between">
           <p className="text-[11px] text-gray-500">
-            {orders.length}개 주문 중 {filteredOrders.length}개 표시
+            {filteredOrders.length === 0
+              ? `${orders.length}개 주문 중 0개 표시`
+              : `${filteredOrders.length}개 중 ${startIndex}-${endIndex} 표시`
+            }
           </p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+              >
+                이전
+              </Button>
+              <span className="text-xs text-gray-600 px-2">{currentPage} / {totalPages}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => p + 1)}
+              >
+                다음
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-interface OrderAccordionItemProps {
+interface OrderTableRowProps {
   order: OrderWithItems;
+  isExpanded: boolean;
   isPending: boolean;
+  onToggle: (orderId: string) => void;
   onStatusUpdate: (orderId: string, newStatus: string) => void;
   onDelete: (orderId: string) => void;
 }
 
-function OrderAccordionItem({ order, isPending, onStatusUpdate, onDelete }: OrderAccordionItemProps) {
+function OrderTableRow({ order, isExpanded, isPending, onToggle, onStatusUpdate, onDelete }: OrderTableRowProps) {
   const formattedDate = useMemo(
-    () => order.created_at ? new Date(order.created_at).toLocaleDateString() : '-',
+    () => order.created_at ? new Date(order.created_at).toLocaleDateString('ko-KR') : '-',
     [order.created_at]
   );
 
@@ -293,159 +378,176 @@ function OrderAccordionItem({ order, isPending, onStatusUpdate, onDelete }: Orde
     [order.total]
   );
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => onStatusUpdate(order.id, e.target.value),
+  const handleStatusChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      e.stopPropagation();
+      onStatusUpdate(order.id, e.target.value);
+    },
     [order.id, onStatusUpdate]
   );
 
   return (
-    <AccordionItem value={order.id} className="border-b border-gray-100">
-      <AccordionTrigger className="px-3 md:px-4 py-2.5 hover:no-underline hover:bg-gray-50">
-        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 w-full text-left">
-          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
-            <div className="min-w-0">
-              <p className="font-medium text-gray-900 text-xs truncate">
-                #{order.id.slice(0, 8)}
-              </p>
-              <p className="text-[10px] text-gray-500 md:hidden">{formattedDate}</p>
-            </div>
-            <div className="hidden md:block min-w-0">
-              <p className="text-xs text-gray-900 truncate">{order.customer_name || '게스트'}</p>
-              <p className="text-[10px] text-gray-500 truncate">{order.customer_email || '-'}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 md:gap-4">
-            <p className="hidden md:block text-[11px] text-gray-600 whitespace-nowrap">{formattedDate}</p>
-            <span className="text-[11px] text-gray-500 whitespace-nowrap">
-              {DELIVERY_LABELS[order.delivery_method] || order.delivery_method}
-            </span>
-            <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">{formattedTotal}</p>
-            <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full whitespace-nowrap ${STATUS_COLORS[order.status]}`}>
-              {STATUS_LABELS[order.status]}
-            </span>
-          </div>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-3 md:px-4 pb-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-          <div className="space-y-2">
-            <div>
-              <h3 className="text-[11px] font-semibold text-gray-900 mb-1">고객 정보</h3>
-              <div className="bg-gray-50 rounded-md p-2.5 space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-[11px] text-gray-500">이름</span>
-                  <span className="text-[11px] font-medium text-gray-900">{order.customer_name || '게스트'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[11px] text-gray-500">이메일</span>
-                  <span className="text-[11px] font-medium text-gray-900 break-all">{order.customer_email || '-'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[11px] text-gray-500">연락처</span>
-                  <span className="text-[11px] font-medium text-gray-900">{order.customer_phone}</span>
-                </div>
-              </div>
-            </div>
+    <Fragment>
+      <tr
+        className="hover:bg-gray-50 cursor-pointer transition-colors"
+        onClick={() => onToggle(order.id)}
+      >
+        <td className="px-3 py-2.5">
+          <p className="font-medium text-gray-900 text-xs">#{order.id.slice(0, 8)}</p>
+          <p className="text-[10px] text-gray-500 md:hidden">{order.customer_name || '게스트'}</p>
+        </td>
+        <td className="px-3 py-2.5 hidden md:table-cell">
+          <p className="text-xs text-gray-900 truncate max-w-[120px]">{order.customer_name || '게스트'}</p>
+        </td>
+        <td className="px-3 py-2.5 hidden lg:table-cell">
+          <p className="text-xs text-gray-500 truncate max-w-[150px]">{order.customer_email || '-'}</p>
+        </td>
+        <td className="px-3 py-2.5 hidden sm:table-cell">
+          <span className="text-[11px] text-gray-500">
+            {DELIVERY_LABELS[order.delivery_method] || order.delivery_method}
+          </span>
+        </td>
+        <td className="px-3 py-2.5">
+          <span className="text-[11px] text-gray-600 whitespace-nowrap">{formattedDate}</span>
+        </td>
+        <td className="px-3 py-2.5 text-right">
+          <span className="text-xs font-semibold text-gray-900 whitespace-nowrap">{formattedTotal}</span>
+        </td>
+        <td className="px-3 py-2.5 text-center">
+          <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full whitespace-nowrap ${STATUS_COLORS[order.status]}`}>
+            {STATUS_LABELS[order.status]}
+          </span>
+        </td>
+        <td className="px-2 py-2.5">
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </td>
+      </tr>
 
-            <div>
-              <h3 className="text-[11px] font-semibold text-gray-900 mb-1">배송지</h3>
-              <div className="bg-gray-50 rounded-md p-2.5 text-[11px] space-y-0.5">
-                <p className="text-gray-900">{order.shipping_address_line_one}</p>
-                {order.shipping_address_line_two && (
-                  <p className="text-gray-600">{order.shipping_address_line_two}</p>
-                )}
-                <p className="text-gray-600">
-                  {[order.shipping_city, order.shipping_state, order.shipping_zip_code].filter(Boolean).join(', ')}
-                </p>
-                {order.shipping_country && <p className="text-gray-600">{order.shipping_country}</p>}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-[11px] font-semibold text-gray-900 mb-1">결제 정보</h3>
-              <div className="bg-gray-50 rounded-md p-2.5 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-gray-500">결제 방법</span>
-                  <span className="text-[11px] font-medium text-gray-900 capitalize">{order.payment_method}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-gray-500">결제 상태</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${PAYMENT_STATUS_COLORS[order.payment_status]}`}>
-                    {order.payment_status}
-                  </span>
-                </div>
-                {order.payment_id && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] text-gray-500">결제 ID</span>
-                    <span className="text-[10px] font-mono text-gray-700 truncate max-w-35">{order.payment_id}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div>
-              <h3 className="text-[11px] font-semibold text-gray-900 mb-1">
-                주문 상품
-                {order.order_name && <span className="font-normal text-gray-500 ml-1">({order.order_name})</span>}
-              </h3>
-              <div className="bg-gray-50 rounded-md p-2.5 space-y-2">
-                {order.order_items?.length ? (
-                  order.order_items.map(item => (
-                    <div key={item.id} className="flex justify-between items-start gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 text-[11px] truncate">
-                          {item.products?.name || '알 수 없는 상품'}
-                        </p>
-                        <p className="text-[10px] text-gray-500">
-                          수량: {item.quantity}
-                          {item.size && ` · 사이즈: ${item.size}`}
-                        </p>
-                      </div>
-                      <p className="font-medium text-gray-900 text-[11px] whitespace-nowrap">
-                        ₩{item.price_at_time.toLocaleString('ko-KR')}
-                      </p>
+      {isExpanded && (
+        <tr>
+          <td colSpan={8} className="px-3 pb-3 pt-1 bg-gray-50/50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <div>
+                  <h3 className="text-[11px] font-semibold text-gray-900 mb-1">고객 정보</h3>
+                  <div className="bg-white rounded-md p-2.5 space-y-1 border border-gray-100">
+                    <div className="flex justify-between">
+                      <span className="text-[11px] text-gray-500">이름</span>
+                      <span className="text-[11px] font-medium text-gray-900">{order.customer_name || '게스트'}</span>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-[11px]">상품 없음</p>
-                )}
-                <div className="pt-2 border-t border-gray-200 flex justify-between">
-                  <span className="font-semibold text-gray-900 text-xs">합계</span>
-                  <span className="font-semibold text-gray-900 text-xs">{formattedTotal}</span>
+                    <div className="flex justify-between">
+                      <span className="text-[11px] text-gray-500">이메일</span>
+                      <span className="text-[11px] font-medium text-gray-900 break-all">{order.customer_email || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[11px] text-gray-500">연락처</span>
+                      <span className="text-[11px] font-medium text-gray-900">{order.customer_phone}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-[11px] font-semibold text-gray-900 mb-1">배송지</h3>
+                  <div className="bg-white rounded-md p-2.5 text-[11px] space-y-0.5 border border-gray-100">
+                    <p className="text-gray-900">{order.shipping_address_line_one}</p>
+                    {order.shipping_address_line_two && (
+                      <p className="text-gray-600">{order.shipping_address_line_two}</p>
+                    )}
+                    <p className="text-gray-600">
+                      {[order.shipping_city, order.shipping_state, order.shipping_zip_code].filter(Boolean).join(', ')}
+                    </p>
+                    {order.shipping_country && <p className="text-gray-600">{order.shipping_country}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-[11px] font-semibold text-gray-900 mb-1">결제 정보</h3>
+                  <div className="bg-white rounded-md p-2.5 space-y-1 border border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-gray-500">결제 방법</span>
+                      <span className="text-[11px] font-medium text-gray-900 capitalize">{order.payment_method}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-gray-500">결제 상태</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${PAYMENT_STATUS_COLORS[order.payment_status]}`}>
+                        {order.payment_status}
+                      </span>
+                    </div>
+                    {order.payment_id && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-gray-500">결제 ID</span>
+                        <span className="text-[10px] font-mono text-gray-700 truncate max-w-35">{order.payment_id}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <h3 className="text-[11px] font-semibold text-gray-900 mb-1">주문 상태 변경</h3>
-              <select
-                className={`w-full px-2.5 py-1.5 text-[11px] font-medium rounded-md border-0 cursor-pointer ${STATUS_COLORS[order.status]}`}
-                value={order.status}
-                onChange={handleChange}
-                disabled={isPending}
-              >
-                <option value="pending">대기중</option>
-                <option value="processing">처리중</option>
-                <option value="shipped">배송중</option>
-                <option value="delivered">배송완료</option>
-                <option value="cancelled">취소됨</option>
-              </select>
-            </div>
+              <div className="space-y-2">
+                <div>
+                  <h3 className="text-[11px] font-semibold text-gray-900 mb-1">
+                    주문 상품
+                    {order.order_name && <span className="font-normal text-gray-500 ml-1">({order.order_name})</span>}
+                  </h3>
+                  <div className="bg-white rounded-md p-2.5 space-y-2 border border-gray-100">
+                    {order.order_items?.length ? (
+                      order.order_items.map(item => (
+                        <div key={item.id} className="flex justify-between items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 text-[11px] truncate">
+                              {item.products?.name || '알 수 없는 상품'}
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              수량: {item.quantity}
+                              {item.size && ` · 사이즈: ${item.size}`}
+                            </p>
+                          </div>
+                          <p className="font-medium text-gray-900 text-[11px] whitespace-nowrap">
+                            ₩{item.price_at_time.toLocaleString('ko-KR')}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-[11px]">상품 없음</p>
+                    )}
+                    <div className="pt-2 border-t border-gray-200 flex justify-between">
+                      <span className="font-semibold text-gray-900 text-xs">합계</span>
+                      <span className="font-semibold text-gray-900 text-xs">{formattedTotal}</span>
+                    </div>
+                  </div>
+                </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-[11px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-              onClick={() => onDelete(order.id)}
-              disabled={isPending}
-            >
-              주문 삭제
-            </Button>
-          </div>
-        </div>
-      </AccordionContent>
-    </AccordionItem>
+                <div>
+                  <h3 className="text-[11px] font-semibold text-gray-900 mb-1">주문 상태 변경</h3>
+                  <select
+                    className={`w-full px-2.5 py-1.5 text-[11px] font-medium rounded-md border-0 cursor-pointer ${STATUS_COLORS[order.status]}`}
+                    value={order.status}
+                    onChange={handleStatusChange}
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={isPending}
+                  >
+                    <option value="pending">대기중</option>
+                    <option value="processing">처리중</option>
+                    <option value="shipped">배송중</option>
+                    <option value="delivered">배송완료</option>
+                    <option value="cancelled">취소됨</option>
+                  </select>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-[11px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                  onClick={(e) => { e.stopPropagation(); onDelete(order.id); }}
+                  disabled={isPending}
+                >
+                  주문 삭제
+                </Button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </Fragment>
   );
 }

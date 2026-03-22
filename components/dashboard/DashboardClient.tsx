@@ -128,46 +128,116 @@ export default function DashboardClient({ initialStats }: DashboardClientProps) 
         ))}
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">
-          최근 주문
-          {date?.from && (
-            <span className="text-xs font-normal text-gray-500 ml-2">
-              ({format(date.from, 'MM.dd', { locale: ko })}
-              {date.to && ` - ${format(date.to, 'MM.dd', { locale: ko })}`})
-            </span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Daily Orders Chart */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">
+            일별 주문
+            {date?.from && (
+              <span className="text-xs font-normal text-gray-500 ml-2">
+                ({format(date.from, 'MM.dd', { locale: ko })}
+                {date.to && ` - ${format(date.to, 'MM.dd', { locale: ko })}`})
+              </span>
+            )}
+          </h2>
+          {stats.dailyOrderStats.length === 0 ? (
+            <p className="text-gray-500 text-center text-xs py-6">데이터가 없습니다</p>
+          ) : (
+            <div>
+              <div className="flex items-end gap-1 h-28">
+                {stats.dailyOrderStats.map((day) => {
+                  const max = Math.max(...stats.dailyOrderStats.map(d => d.totalAmount), 1);
+                  const heightPct = (day.totalAmount / max) * 100;
+                  return (
+                    <div key={day.date} className="flex-1 flex flex-col items-center gap-1 min-w-0" title={`${day.date}: ${day.orderCount}건 / ₩${day.totalAmount.toLocaleString('ko-KR')}`}>
+                      <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>
+                        <div
+                          className="w-full max-w-6 bg-blue-500 rounded-t transition-all hover:bg-blue-600"
+                          style={{ height: `${Math.max(heightPct, 2)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-1 mt-1.5">
+                {stats.dailyOrderStats.map((day) => (
+                  <div key={day.date} className="flex-1 text-center min-w-0">
+                    <p className="text-[9px] text-gray-400 truncate">{day.date.slice(5)}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-1 mt-0.5">
+                {stats.dailyOrderStats.map((day) => (
+                  <div key={day.date} className="flex-1 text-center min-w-0">
+                    <p className="text-[9px] text-gray-500 font-medium">{day.orderCount}건</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
-        </h2>
-        <div className="space-y-2">
+        </div>
+
+        {/* Recent Orders Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">
+            최근 주문
+            {date?.from && (
+              <span className="text-xs font-normal text-gray-500 ml-2">
+                ({format(date.from, 'MM.dd', { locale: ko })}
+                {date.to && ` - ${format(date.to, 'MM.dd', { locale: ko })}`})
+              </span>
+            )}
+          </h2>
           {stats.recentOrders.length === 0 ? (
             <p className="text-gray-500 text-center text-xs py-6">주문이 없습니다</p>
           ) : (
-            stats.recentOrders.map(order => (
-              <div key={order.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <div>
-                  <p className="font-medium text-gray-900 text-xs truncate max-w-[120px]">{order.id}</p>
-                  <p className="text-xs text-gray-500">
-                    {order.created_at ? new Date(order.created_at).toLocaleDateString('ko-KR') : '-'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium text-gray-900 text-xs">₩{order.total.toLocaleString('ko-KR')}</p>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                    order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                    order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                    order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
-                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {order.status === 'pending' ? '대기중' :
-                     order.status === 'processing' ? '처리중' :
-                     order.status === 'shipped' ? '배송중' :
-                     order.status === 'delivered' ? '배송완료' :
-                     order.status === 'cancelled' ? '취소됨' : order.status}
-                  </span>
-                </div>
-              </div>
-            ))
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="pb-2 text-left text-[11px] font-medium text-gray-500">주문번호</th>
+                    <th className="pb-2 text-left text-[11px] font-medium text-gray-500 hidden md:table-cell">고객</th>
+                    <th className="pb-2 text-left text-[11px] font-medium text-gray-500">날짜</th>
+                    <th className="pb-2 text-right text-[11px] font-medium text-gray-500">금액</th>
+                    <th className="pb-2 text-right text-[11px] font-medium text-gray-500">상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.recentOrders.map(order => (
+                    <tr key={order.id} className="border-b border-gray-50 last:border-0">
+                      <td className="py-1.5 text-xs font-medium text-gray-900 truncate max-w-[100px]">
+                        #{order.id.slice(0, 8)}
+                      </td>
+                      <td className="py-1.5 text-xs text-gray-600 hidden md:table-cell truncate max-w-[100px]">
+                        {order.customer_name || '게스트'}
+                      </td>
+                      <td className="py-1.5 text-xs text-gray-500">
+                        {order.created_at ? new Date(order.created_at).toLocaleDateString('ko-KR') : '-'}
+                      </td>
+                      <td className="py-1.5 text-xs font-medium text-gray-900 text-right">
+                        ₩{order.total.toLocaleString('ko-KR')}
+                      </td>
+                      <td className="py-1.5 text-right">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                          order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                          order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                          order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                          order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {order.status === 'pending' ? '대기중' :
+                           order.status === 'processing' ? '처리중' :
+                           order.status === 'shipped' ? '배송중' :
+                           order.status === 'delivered' ? '배송완료' :
+                           order.status === 'cancelled' ? '취소됨' : order.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
