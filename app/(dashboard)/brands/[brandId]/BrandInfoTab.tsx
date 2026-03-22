@@ -183,8 +183,8 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
         </div>
       </div>
 
-      {/* Detail Images List - full width */}
-      <div>
+      {/* Detail Images List */}
+      <div className="max-w-lg">
         <label className="block text-xs font-medium text-gray-700 mb-1">상세 이미지</label>
         <p className="text-[10px] text-gray-400 mb-2">각 항목은 단일 이미지 또는 스와이퍼 그룹(여러 이미지)이 될 수 있습니다.</p>
         <div className="space-y-2">
