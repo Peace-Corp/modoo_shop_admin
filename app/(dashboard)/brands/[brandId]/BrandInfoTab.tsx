@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Info } from 'lucide-react';
 import { Brand } from '@/types';
 import { updateBrand, deleteBrand } from '../actions';
 import { useRouter } from 'next/navigation';
@@ -36,6 +37,7 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
   const [pickupEnabled, setPickupEnabled] = useState(brand.delivery_pickup_enabled);
   const [pickupPrice, setPickupPrice] = useState(brand.delivery_pickup_price);
   const [pickupAddress, setPickupAddress] = useState(brand.delivery_pickup_address || '');
+  const [showDetailInfo, setShowDetailInfo] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -183,172 +185,196 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
         </div>
       </div>
 
-      {/* Detail Images List */}
-      <div className="max-w-lg">
-        <label className="block text-xs font-medium text-gray-700 mb-1">상세 이미지</label>
-        <p className="text-[10px] text-gray-400 mb-2">각 항목은 단일 이미지 또는 스와이퍼 그룹(여러 이미지)이 될 수 있습니다.</p>
-        <div className="space-y-2">
-          {detailImageEntries.map((entry, index) => {
-            const isGroup = Array.isArray(entry);
-            return (
-              <div key={index} className="border border-gray-200 rounded-md p-2">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-gray-500 font-medium">#{index + 1}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = [...detailImageEntries];
-                        updated[index] = isGroup ? (entry[0] || '') : [entry || ''];
-                        setDetailImageEntries(updated);
-                      }}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    >
-                      {isGroup ? '스와이퍼 그룹' : '단일 이미지'} ↔
-                    </button>
+      {/* Detail Images + Delivery Options side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-gray-100">
+        {/* Detail Images List */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-1">
+            <label className="text-xs font-medium text-gray-700">상세 이미지</label>
+            <button
+              type="button"
+              onClick={() => setShowDetailInfo(!showDetailInfo)}
+              className="text-gray-400 hover:text-blue-500 transition-colors"
+            >
+              <Info className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {showDetailInfo && (
+            <div className="mb-2 p-2 bg-blue-50 border border-blue-100 rounded-md text-[11px] text-blue-700 space-y-1">
+              <p className="font-medium">상세 이미지 사용 방법</p>
+              <ul className="list-disc pl-3.5 space-y-0.5 text-blue-600">
+                <li><strong>단일 이미지</strong>: 하나의 이미지가 전체 너비로 표시됩니다.</li>
+                <li><strong>스와이퍼 그룹</strong>: 여러 이미지가 좌우로 넘기는 슬라이더로 표시됩니다.</li>
+                <li>↔ 버튼으로 단일/그룹 간 전환할 수 있습니다.</li>
+                <li>↑↓ 버튼으로 항목 순서를 변경할 수 있습니다.</li>
+                <li>이 이미지들은 브랜드 주문 상세 페이지에 표시됩니다.</li>
+              </ul>
+            </div>
+          )}
+          <div className="space-y-2">
+            {detailImageEntries.map((entry, index) => {
+              const isGroup = Array.isArray(entry);
+              return (
+                <div key={index} className="border border-gray-200 rounded-md p-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-gray-500 font-medium">#{index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = [...detailImageEntries];
+                          updated[index] = isGroup ? (entry[0] || '') : [entry || ''];
+                          setDetailImageEntries(updated);
+                        }}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      >
+                        {isGroup ? '스와이퍼 그룹' : '단일 이미지'} ↔
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => {
+                          const updated = [...detailImageEntries];
+                          [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+                          setDetailImageEntries(updated);
+                        }}
+                        className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                      >↑</button>
+                      <button
+                        type="button"
+                        disabled={index === detailImageEntries.length - 1}
+                        onClick={() => {
+                          const updated = [...detailImageEntries];
+                          [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+                          setDetailImageEntries(updated);
+                        }}
+                        className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                      >↓</button>
+                      <button
+                        type="button"
+                        onClick={() => setDetailImageEntries(detailImageEntries.filter((_, i) => i !== index))}
+                        className="text-xs text-red-400 hover:text-red-600 ml-1"
+                      >✕</button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      disabled={index === 0}
-                      onClick={() => {
+                  {isGroup ? (
+                    <ImageUpload
+                      value={entry}
+                      onChange={(urls) => {
                         const updated = [...detailImageEntries];
-                        [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+                        updated[index] = Array.isArray(urls) ? urls : [urls];
                         setDetailImageEntries(updated);
                       }}
-                      className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-30"
-                    >↑</button>
-                    <button
-                      type="button"
-                      disabled={index === detailImageEntries.length - 1}
-                      onClick={() => {
+                      multiple
+                      label=""
+                      aspectRatio="video"
+                    />
+                  ) : (
+                    <ImageUpload
+                      value={entry}
+                      onChange={(url) => {
                         const updated = [...detailImageEntries];
-                        [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+                        updated[index] = url as string;
                         setDetailImageEntries(updated);
                       }}
-                      className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-30"
-                    >↓</button>
-                    <button
-                      type="button"
-                      onClick={() => setDetailImageEntries(detailImageEntries.filter((_, i) => i !== index))}
-                      className="text-xs text-red-400 hover:text-red-600 ml-1"
-                    >✕</button>
-                  </div>
+                      label=""
+                      aspectRatio="video"
+                    />
+                  )}
                 </div>
-                {isGroup ? (
-                  <ImageUpload
-                    value={entry}
-                    onChange={(urls) => {
-                      const updated = [...detailImageEntries];
-                      updated[index] = Array.isArray(urls) ? urls : [urls];
-                      setDetailImageEntries(updated);
-                    }}
-                    multiple
-                    label=""
-                    aspectRatio="video"
-                  />
-                ) : (
-                  <ImageUpload
-                    value={entry}
-                    onChange={(url) => {
-                      const updated = [...detailImageEntries];
-                      updated[index] = url as string;
-                      setDetailImageEntries(updated);
-                    }}
-                    label=""
-                    aspectRatio="video"
-                  />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => setDetailImageEntries([...detailImageEntries, ''])}
+            className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+          >
+            + 이미지 항목 추가
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setDetailImageEntries([...detailImageEntries, ''])}
-          className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
-        >
-          + 이미지 항목 추가
-        </button>
-      </div>
-      {/* Delivery Options */}
-      <div className="pt-3 border-t border-gray-100">
-        <label className="block text-xs font-medium text-gray-700 mb-2">배송 옵션</label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Domestic */}
-          <div className="border border-gray-200 rounded-md p-2.5">
-            <div className="flex items-center gap-2 mb-1.5">
-              <input
-                type="checkbox"
-                checked={domesticEnabled}
-                onChange={(e) => setDomesticEnabled(e.target.checked)}
-                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-xs font-medium text-gray-700">국내배송</span>
+
+        {/* Delivery Options */}
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-2">배송 옵션</label>
+          <div className="space-y-2">
+            {/* Domestic */}
+            <div className="border border-gray-200 rounded-md p-2.5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <input
+                  type="checkbox"
+                  checked={domesticEnabled}
+                  onChange={(e) => setDomesticEnabled(e.target.checked)}
+                  className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-xs font-medium text-gray-700">국내배송</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  value={domesticPrice}
+                  onChange={(e) => setDomesticPrice(parseInt(e.target.value) || 0)}
+                  disabled={!domesticEnabled}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+                />
+                <span className="text-xs text-gray-500 shrink-0">원</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="number"
-                value={domesticPrice}
-                onChange={(e) => setDomesticPrice(parseInt(e.target.value) || 0)}
-                disabled={!domesticEnabled}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
-              />
-              <span className="text-xs text-gray-500 shrink-0">원</span>
+            {/* International */}
+            <div className="border border-gray-200 rounded-md p-2.5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <input
+                  type="checkbox"
+                  checked={internationalEnabled}
+                  onChange={(e) => setInternationalEnabled(e.target.checked)}
+                  className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-xs font-medium text-gray-700">해외배송</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  value={internationalPrice}
+                  onChange={(e) => setInternationalPrice(parseInt(e.target.value) || 0)}
+                  disabled={!internationalEnabled}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+                />
+                <span className="text-xs text-gray-500 shrink-0">원</span>
+              </div>
             </div>
-          </div>
-          {/* International */}
-          <div className="border border-gray-200 rounded-md p-2.5">
-            <div className="flex items-center gap-2 mb-1.5">
-              <input
-                type="checkbox"
-                checked={internationalEnabled}
-                onChange={(e) => setInternationalEnabled(e.target.checked)}
-                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-xs font-medium text-gray-700">해외배송</span>
+            {/* Pickup */}
+            <div className="border border-gray-200 rounded-md p-2.5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <input
+                  type="checkbox"
+                  checked={pickupEnabled}
+                  onChange={(e) => setPickupEnabled(e.target.checked)}
+                  className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-xs font-medium text-gray-700">현장수령</span>
+              </div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <input
+                  type="number"
+                  value={pickupPrice}
+                  onChange={(e) => setPickupPrice(parseInt(e.target.value) || 0)}
+                  disabled={!pickupEnabled}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
+                />
+                <span className="text-xs text-gray-500 shrink-0">원</span>
+              </div>
+              {pickupEnabled && (
+                <input
+                  type="text"
+                  value={pickupAddress}
+                  onChange={(e) => setPickupAddress(e.target.value)}
+                  placeholder="수령 장소 주소"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                />
+              )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="number"
-                value={internationalPrice}
-                onChange={(e) => setInternationalPrice(parseInt(e.target.value) || 0)}
-                disabled={!internationalEnabled}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
-              />
-              <span className="text-xs text-gray-500 shrink-0">원</span>
-            </div>
-          </div>
-          {/* Pickup */}
-          <div className="border border-gray-200 rounded-md p-2.5">
-            <div className="flex items-center gap-2 mb-1.5">
-              <input
-                type="checkbox"
-                checked={pickupEnabled}
-                onChange={(e) => setPickupEnabled(e.target.checked)}
-                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-xs font-medium text-gray-700">현장수령</span>
-            </div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <input
-                type="number"
-                value={pickupPrice}
-                onChange={(e) => setPickupPrice(parseInt(e.target.value) || 0)}
-                disabled={!pickupEnabled}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-400"
-              />
-              <span className="text-xs text-gray-500 shrink-0">원</span>
-            </div>
-            {pickupEnabled && (
-              <input
-                type="text"
-                value={pickupAddress}
-                onChange={(e) => setPickupAddress(e.target.value)}
-                placeholder="수령 장소 주소"
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              />
-            )}
           </div>
         </div>
       </div>
