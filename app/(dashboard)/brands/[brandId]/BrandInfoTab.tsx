@@ -20,7 +20,9 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
   const [isPending, startTransition] = useTransition();
   const [logoUrl, setLogoUrl] = useState(brand.logo || '');
   const [bannerUrl, setBannerUrl] = useState(brand.banner || '');
-  const [orderDetailImageUrl, setOrderDetailImageUrl] = useState(brand.order_detail_image || '');
+  const [detailImageEntries, setDetailImageEntries] = useState<(string | string[])[]>(
+    brand.order_detail_image ?? []
+  );
   const [validPeriodStart, setValidPeriodStart] = useState<Date | undefined>(
     brand.valid_period_start ? new Date(brand.valid_period_start) : undefined
   );
@@ -41,7 +43,9 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
 
     formData.set('logo', logoUrl);
     formData.set('banner', bannerUrl);
-    formData.set('order_detail_image', orderDetailImageUrl);
+    formData.set('order_detail_image', JSON.stringify(detailImageEntries.filter(e =>
+      Array.isArray(e) ? e.length > 0 : e !== ''
+    )));
     formData.set('valid_period_start', validPeriodStart?.toISOString() || '');
     formData.set('valid_period_end', validPeriodEnd?.toISOString() || '');
     if (domesticEnabled) formData.set('delivery_domestic_enabled', 'on');
@@ -133,14 +137,93 @@ export default function BrandInfoTab({ brand, productCount }: BrandInfoTabProps)
           helperText="가로형 배너 이미지 (예: 1200x400)"
         />
       </div>
-      <div className="max-w-xs">
-        <ImageUpload
-          value={orderDetailImageUrl}
-          onChange={(url) => setOrderDetailImageUrl(url as string)}
-          label="전체 주문 상세"
-          aspectRatio="video"
-          helperText="주문 상세 페이지에 표시될 이미지"
-        />
+      {/* Detail Images List */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1">상세 이미지</label>
+        <p className="text-[10px] text-gray-400 mb-2">각 항목은 단일 이미지 또는 스와이퍼 그룹(여러 이미지)이 될 수 있습니다.</p>
+        <div className="space-y-2">
+          {detailImageEntries.map((entry, index) => {
+            const isGroup = Array.isArray(entry);
+            return (
+              <div key={index} className="border border-gray-200 rounded-md p-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-500 font-medium">#{index + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...detailImageEntries];
+                        updated[index] = isGroup ? (entry[0] || '') : [entry || ''];
+                        setDetailImageEntries(updated);
+                      }}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    >
+                      {isGroup ? '스와이퍼 그룹' : '단일 이미지'} ↔
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      onClick={() => {
+                        const updated = [...detailImageEntries];
+                        [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+                        setDetailImageEntries(updated);
+                      }}
+                      className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                    >↑</button>
+                    <button
+                      type="button"
+                      disabled={index === detailImageEntries.length - 1}
+                      onClick={() => {
+                        const updated = [...detailImageEntries];
+                        [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+                        setDetailImageEntries(updated);
+                      }}
+                      className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                    >↓</button>
+                    <button
+                      type="button"
+                      onClick={() => setDetailImageEntries(detailImageEntries.filter((_, i) => i !== index))}
+                      className="text-xs text-red-400 hover:text-red-600 ml-1"
+                    >✕</button>
+                  </div>
+                </div>
+                {isGroup ? (
+                  <ImageUpload
+                    value={entry}
+                    onChange={(urls) => {
+                      const updated = [...detailImageEntries];
+                      updated[index] = Array.isArray(urls) ? urls : [urls];
+                      setDetailImageEntries(updated);
+                    }}
+                    multiple
+                    label=""
+                    aspectRatio="video"
+                  />
+                ) : (
+                  <ImageUpload
+                    value={entry}
+                    onChange={(url) => {
+                      const updated = [...detailImageEntries];
+                      updated[index] = url as string;
+                      setDetailImageEntries(updated);
+                    }}
+                    label=""
+                    aspectRatio="video"
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={() => setDetailImageEntries([...detailImageEntries, ''])}
+          className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+        >
+          + 이미지 항목 추가
+        </button>
       </div>
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">브랜드 컬러</label>

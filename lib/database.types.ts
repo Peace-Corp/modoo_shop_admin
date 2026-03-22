@@ -70,7 +70,7 @@ export type Database = {
           id: string
           logo: string
           name: string
-          order_detail_image: string | null
+          order_detail_image: Json | null
           slug: string
           updated_at: string | null
         }
@@ -84,7 +84,7 @@ export type Database = {
           id: string
           logo: string
           name: string
-          order_detail_image?: string | null
+          order_detail_image?: Json | null
           slug: string
           updated_at?: string | null
         }
@@ -98,7 +98,7 @@ export type Database = {
           id?: string
           logo?: string
           name?: string
-          order_detail_image?: string | null
+          order_detail_image?: Json | null
           slug?: string
           updated_at?: string | null
         }

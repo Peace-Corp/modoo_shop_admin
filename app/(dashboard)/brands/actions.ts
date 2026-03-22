@@ -60,7 +60,11 @@ export async function updateBrand(id: string, formData: FormData): Promise<{ suc
     banner: formData.get('banner') as string,
     brand_color: (formData.get('brand_color') as string) || null,
     featured: formData.get('featured') === 'on',
-    order_detail_image: (formData.get('order_detail_image') as string) || null,
+    order_detail_image: (() => {
+      const raw = formData.get('order_detail_image') as string;
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    })(),
     valid_period_start: validPeriodStart || null,
     valid_period_end: validPeriodEnd || null,
     delivery_domestic_enabled: formData.get('delivery_domestic_enabled') === 'on',

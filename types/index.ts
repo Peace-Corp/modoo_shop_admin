@@ -39,7 +39,7 @@ export interface Brand {
   brand_color?: string | null;
   description: string;
   featured?: boolean | null;
-  order_detail_image?: string | null;
+  order_detail_image?: (string | string[])[] | null;
   valid_period_start?: string | null;
   valid_period_end?: string | null;
   delivery_domestic_enabled: boolean;
