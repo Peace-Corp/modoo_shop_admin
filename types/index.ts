@@ -73,7 +73,7 @@ export interface Order {
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   payment_method: string;
-  payment_status: 'pending' | 'completed' | 'failed';
+  payment_status: 'pending' | 'completed' | 'failed' | 'refunded' | 'partially_refunded';
   shipping_address_line_one: string;
   shipping_address_line_two?: string | null;
   shipping_city?: string | null;
@@ -87,6 +87,7 @@ export interface Order {
   payment_id?: string | null;
   delivery_method: string;
   shipping_cost: number;
+  refund_amount: number;
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -118,6 +119,26 @@ export interface SalesData {
   revenue: number;
   orders: number;
   created_at?: string | null;
+}
+
+export interface RefundedItem {
+  order_item_id: string;
+  product_name: string;
+  quantity: number;
+  amount: number;
+}
+
+export interface Refund {
+  id: string;
+  order_id: string;
+  refund_type: 'full' | 'partial';
+  refund_amount: number;
+  reason: string;
+  status: 'pending' | 'completed' | 'rejected';
+  refunded_items?: RefundedItem[] | null;
+  admin_note?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface DailyOrderStats {

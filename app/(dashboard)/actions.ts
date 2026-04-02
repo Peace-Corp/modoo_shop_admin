@@ -101,7 +101,8 @@ export async function fetchDashboardStats(dateRange?: DateRange): Promise<Dashbo
   ]);
 
   const totalRevenue = salesRes.data?.reduce((sum, d) => sum + Number(d.revenue), 0) || 0;
-  const totalOrderAmount = ordersRes.data?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+  const totalRefundAmount = ordersRes.data?.reduce((sum, order) => sum + Number(order.refund_amount || 0), 0) || 0;
+  const totalOrderAmount = (ordersRes.data?.reduce((sum, order) => sum + Number(order.total), 0) || 0) - totalRefundAmount;
   const dailyOrderStats = aggregateOrdersByDate(chartOrdersRes.data || [], chartStartDate, chartEndDate);
 
   return {

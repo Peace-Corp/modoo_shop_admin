@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
 import { Order, OrderItem } from '@/types';
 import { updateOrderStatus, deleteOrder, fetchOrders } from './actions';
+import RefundDialog from './RefundDialog';
 
 interface OrderWithItems extends Order {
   order_items?: (OrderItem & { products?: { name: string; images: string[]; brand_id: string } })[];
@@ -43,6 +44,16 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
   completed: 'bg-green-100 text-green-700',
   failed: 'bg-red-100 text-red-700',
+  refunded: 'bg-purple-100 text-purple-700',
+  partially_refunded: 'bg-orange-100 text-orange-700',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: '결제대기',
+  completed: '결제완료',
+  failed: '결제실패',
+  refunded: '전체환불',
+  partially_refunded: '부분환불',
 };
 
 const DELIVERY_LABELS: Record<string, string> = {
@@ -69,6 +80,7 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [refundOrder, setRefundOrder] = useState<OrderWithItems | null>(null);
 
   const refreshOrders = useCallback(async () => {
     setIsRefreshing(true);
@@ -137,9 +149,12 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
         setOrders(prev => prev.map(o =>
           o.id === orderId ? { ...o, status: newStatus as Order['status'] } : o
         ));
+      } else if (result.error) {
+        alert(result.error);
+        refreshOrders();
       }
     });
-  }, []);
+  }, [refreshOrders]);
 
   const handleDelete = useCallback(async (orderId: string) => {
     if (!confirm('주문을 삭제하시겠습니까? 관련된 모든 주문 항목도 함께 삭제됩니다.')) return;
@@ -152,6 +167,14 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
     });
   }, [expandedOrderId]);
 
+  const handleRefund = useCallback((order: OrderWithItems) => {
+    setRefundOrder(order);
+  }, []);
+
+  const handleRefundComplete = useCallback(() => {
+    refreshOrders();
+  }, [refreshOrders]);
+
   const handleFilterClick = useCallback((key: string) => {
     setStatusFilter(prev => prev === key ? '' : key);
   }, []);
@@ -161,7 +184,7 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
   }, []);
 
   const exportToCSV = useCallback(() => {
-    const headers = ['주문번호', '고객명', '이메일', '연락처', '배송방법', '결제방법', '금액', '상태', '주문일'];
+    const headers = ['주문번호', '고객명', '이메일', '연락처', '배송방법', '결제방법', '금액', '환불금액', '결제상태', '상태', '주문일'];
     const rows = filteredOrders.map(order => [
       order.id,
       order.customer_name || '게스트',
@@ -170,6 +193,8 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
       DELIVERY_LABELS[order.delivery_method] || order.delivery_method,
       PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method,
       order.total,
+      order.refund_amount || 0,
+      PAYMENT_STATUS_LABELS[order.payment_status] || order.payment_status,
       STATUS_LABELS[order.status],
       order.created_at ? new Date(order.created_at).toLocaleDateString('ko-KR') : '',
     ]);
@@ -315,6 +340,7 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
                     onToggle={toggleExpand}
                     onStatusUpdate={handleStatusUpdate}
                     onDelete={handleDelete}
+                    onRefund={handleRefund}
                   />
                 ))}
               </tbody>
@@ -354,6 +380,15 @@ export default function OrdersClient({ initialOrders, brands }: OrdersClientProp
           )}
         </div>
       </div>
+
+      {refundOrder && (
+        <RefundDialog
+          order={refundOrder}
+          open={!!refundOrder}
+          onOpenChange={(open) => { if (!open) setRefundOrder(null); }}
+          onRefundComplete={handleRefundComplete}
+        />
+      )}
     </div>
   );
 }
@@ -365,9 +400,10 @@ interface OrderTableRowProps {
   onToggle: (orderId: string) => void;
   onStatusUpdate: (orderId: string, newStatus: string) => void;
   onDelete: (orderId: string) => void;
+  onRefund: (order: OrderWithItems) => void;
 }
 
-function OrderTableRow({ order, isExpanded, isPending, onToggle, onStatusUpdate, onDelete }: OrderTableRowProps) {
+function OrderTableRow({ order, isExpanded, isPending, onToggle, onStatusUpdate, onDelete, onRefund }: OrderTableRowProps) {
   const formattedDate = useMemo(
     () => order.created_at ? new Date(order.created_at).toLocaleDateString('ko-KR') : '-',
     [order.created_at]
@@ -469,10 +505,18 @@ function OrderTableRow({ order, isExpanded, isPending, onToggle, onStatusUpdate,
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[11px] text-gray-500">결제 상태</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${PAYMENT_STATUS_COLORS[order.payment_status]}`}>
-                        {order.payment_status}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_COLORS[order.payment_status]}`}>
+                        {PAYMENT_STATUS_LABELS[order.payment_status] || order.payment_status}
                       </span>
                     </div>
+                    {(order.refund_amount > 0) && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-gray-500">환불 금액</span>
+                        <span className="text-[11px] font-medium text-red-600">
+                          -₩{order.refund_amount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                     {order.payment_id && (
                       <div className="flex justify-between items-center">
                         <span className="text-[11px] text-gray-500">결제 ID</span>
@@ -520,11 +564,11 @@ function OrderTableRow({ order, isExpanded, isPending, onToggle, onStatusUpdate,
                 <div>
                   <h3 className="text-[11px] font-semibold text-gray-900 mb-1">주문 상태 변경</h3>
                   <select
-                    className={`w-full px-2.5 py-1.5 text-[11px] font-medium rounded-md border-0 cursor-pointer ${STATUS_COLORS[order.status]}`}
+                    className={`w-full px-2.5 py-1.5 text-[11px] font-medium rounded-md border-0 cursor-pointer ${STATUS_COLORS[order.status]} ${order.payment_status === 'refunded' ? 'opacity-50 cursor-not-allowed' : ''}`}
                     value={order.status}
                     onChange={handleStatusChange}
                     onClick={(e) => e.stopPropagation()}
-                    disabled={isPending}
+                    disabled={isPending || order.payment_status === 'refunded'}
                   >
                     <option value="pending">대기중</option>
                     <option value="processing">처리중</option>
@@ -532,17 +576,31 @@ function OrderTableRow({ order, isExpanded, isPending, onToggle, onStatusUpdate,
                     <option value="delivered">배송완료</option>
                     <option value="cancelled">취소됨</option>
                   </select>
+                  {order.payment_status === 'refunded' && (
+                    <p className="text-[10px] text-red-500 mt-0.5">전액 환불되어 상태 변경 불가</p>
+                  )}
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-[11px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                  onClick={(e) => { e.stopPropagation(); onDelete(order.id); }}
-                  disabled={isPending}
-                >
-                  주문 삭제
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-[11px] text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700"
+                    onClick={(e) => { e.stopPropagation(); onRefund(order); }}
+                    disabled={isPending || order.payment_status === 'refunded' || order.payment_status === 'pending' || order.payment_status === 'failed'}
+                  >
+                    {order.payment_status === 'refunded' ? '환불완료' : '환불처리'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-[11px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                    onClick={(e) => { e.stopPropagation(); onDelete(order.id); }}
+                    disabled={isPending}
+                  >
+                    주문 삭제
+                  </Button>
+                </div>
               </div>
             </div>
           </td>
